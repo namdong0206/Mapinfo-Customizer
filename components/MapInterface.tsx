@@ -40,7 +40,9 @@ import {
   Zap,
   RotateCcw,
   Eye,
-  EyeOff
+  EyeOff,
+  Video,
+  Navigation
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -48,6 +50,7 @@ import { twMerge } from 'tailwind-merge';
 import length from '@turf/length';
 import centroid from '@turf/centroid';
 import along from '@turf/along';
+import destination from '@turf/destination';
 import bearing from '@turf/bearing';
 import lineDistance from '@turf/line-distance';
 
@@ -129,7 +132,7 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     }
   },
   CYCLOSM: {
-    label: 'CyclOSM',
+    label: 'OpenTopoMap',
     category: 'raster',
     url: {
       version: 8,
@@ -137,9 +140,9 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
       sources: {
         'cycl-tiles': {
           type: 'raster',
-          tiles: ['https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png'],
+          tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
-          attribution: '&copy; CyclOSM'
+          attribution: '&copy; OpenTopoMap'
         }
       },
       layers: [{ id: 'cycl', type: 'raster', source: 'cycl-tiles' }]
@@ -431,7 +434,8 @@ export default function MapInterface() {
   const map = useRef<maplibregl.Map | null>(null);
   const draw = useRef<MapboxDraw | null>(null);
   
-  const [activeMode, setActiveMode] = useState<'view' | 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon'>('view');
+  const [activeMode, setActiveMode] = useState<'view' | 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon' | 'routing'>('view');
+  const activeModeRef = useRef(activeMode);
   const [routeType, setRouteType] = useState<'straight' | 'real'>('straight');
   const [travelMode, setTravelMode] = useState<'driving' | 'motorbike' | 'walking'>('driving');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -482,18 +486,11 @@ export default function MapInterface() {
     isPlaying: boolean;
     direction: 1 | -1;
     visible: boolean; // toggle visibility
+    isFpv?: boolean;
   }>>({});
   const animationFrameRef = useRef<number | null>(null);
   
-  const [featureEditModal, setFeatureEditModal] = useState<{
-    isOpen: boolean,
-    featureId: string | null
-  }>({
-    isOpen: false,
-    featureId: null
-  });
-
-  const selectedFeature = drawnFeatures.find(f => f.id === (selectedFeatureId || featureEditModal.featureId));
+  const selectedFeature = drawnFeatures.find(f => f.id === selectedFeatureId);
   const is3DRef = useRef(is3D);
   const mapStyleRef = useRef(mapStyleKey);
   const adminBoundaryRef = useRef(showAdminBoundaries);
@@ -569,11 +566,23 @@ export default function MapInterface() {
             let delta = (metersPerTick / totalDist) * config.direction;
             newProgress = config.progress + delta;
 
-            if (newProgress > 1) newProgress = 0;
-            if (newProgress < 0) newProgress = 1;
+            if (config.isFpv) {
+              if (newProgress >= 1 || newProgress <= 0) {
+                // In FPV mode, do not loop. Clamp progress and stop animation.
+                newProgress = Math.max(0, Math.min(1, newProgress));
+                next[id] = { ...config, progress: newProgress, isPlaying: false, isFpv: false };
+                hasChanges = true;
+              } else {
+                next[id] = { ...config, progress: newProgress };
+                hasChanges = true;
+              }
+            } else {
+              if (newProgress > 1) newProgress = 0;
+              if (newProgress < 0) newProgress = 1;
 
-            next[id] = { ...config, progress: newProgress };
-            hasChanges = true;
+              next[id] = { ...config, progress: newProgress };
+              hasChanges = true;
+            }
           }
 
           const vehicleSourceId = `vehicle-${id}`;
@@ -584,9 +593,24 @@ export default function MapInterface() {
             const nextPoint = along(feat.properties.routeGeometry, nextPointDist, { units: 'kilometers' });
             const b = bearing(point, nextPoint);
             const finalBearing = config.direction === 1 ? b : b + 180;
+            
+            // Adjust bearing based on map rotation
+            const mapBearing = m.getBearing();
+            let relativeBearing = (finalBearing - mapBearing + 360) % 360;
+            if (relativeBearing > 180) relativeBearing -= 360;
+            
             // Microsoft emojis face left by default. 
-            // Bearing > 0 means heading East (Right), bearing < 0 means heading West (Left).
-            const facing = (finalBearing > 0) ? 'right' : 'left';
+            // relativeBearing > 0 means heading Right relative to viewport.
+            const facing = (relativeBearing > 0 && relativeBearing < 180) ? 'right' : 'left';
+
+            // Add bouncing animation for walking
+            const tMode = feat.properties?.travelMode || travelMode;
+            let iconOffset = [0, 0];
+            if (tMode === 'walking') {
+                const distanceMeters = newProgress * totalDist * 1000;
+                const bounce = -Math.abs(Math.sin(distanceMeters * 2.5)) * 12; // Bounce up 12px
+                iconOffset = [0, bounce];
+            }
 
             source.setData({
               type: 'FeatureCollection',
@@ -596,11 +620,26 @@ export default function MapInterface() {
                 properties: { 
                   bearing: finalBearing,
                   facing: facing,
-                  travelMode: feat.properties?.travelMode || travelMode,
-                  visible: config.visible !== false
+                  iconOffset: iconOffset,
+                  travelMode: tMode,
+                  visible: config.isFpv ? false : (config.visible !== false)
                 }
               }]
             });
+            
+            if (config.isFpv && config.isPlaying) {
+              const isSatellite = mapStyleRef.current === 'SATELLITE' || mapStyleRef.current === 'HYBRID';
+              const targetZoom = isSatellite ? Math.min(Math.max(m.getZoom(), 14), 16) : Math.max(m.getZoom(), 17);
+              
+              // Move movement center to the bottom of the screen
+              m.jumpTo({
+                center: point.geometry.coordinates as [number, number],
+                bearing: finalBearing,
+                pitch: 75,
+                zoom: targetZoom,
+                padding: { top: m.getContainer().clientHeight * 0.7, bottom: 0, left: 0, right: 0 }
+              });
+            }
           }
         });
 
@@ -1006,6 +1045,16 @@ export default function MapInterface() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  const [routingStart, setRoutingStart] = useState<{ query: string, coords: [number, number] | null }>({ query: '', coords: null });
+  const [routingEnd, setRoutingEnd] = useState<{ query: string, coords: [number, number] | null }>({ query: '', coords: null });
+  const [routingFocus, setRoutingFocus] = useState<'start' | 'end' | null>(null);
+  const routingFocusRef = useRef(routingFocus);
+
+  useEffect(() => {
+    activeModeRef.current = activeMode;
+    routingFocusRef.current = routingFocus;
+  }, [activeMode, routingFocus]);
+
   const fetchRealRoute = useCallback(async (featureId: string, waypoints: number[][], mode: string) => {
     try {
       const query = waypoints.map(c => c.join(',')).join(';');
@@ -1056,6 +1105,18 @@ export default function MapInterface() {
     // Basic map click info
     setCoords({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     
+    // Routing mode click
+    if (activeModeRef.current === 'routing' && routingFocusRef.current) {
+      const coords = [e.lngLat.lng, e.lngLat.lat] as [number, number];
+      const query = `${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`;
+      if (routingFocusRef.current === 'start') {
+        setRoutingStart({ query, coords });
+      } else {
+        setRoutingEnd({ query, coords });
+      }
+      return;
+    }
+
     // Check if we clicked on a real route layer (which isn't natively caught by MapboxDraw)
     if (map.current && draw.current) {
       // Don't interfere if we are already doing something interactive with the selected tool
@@ -1322,6 +1383,7 @@ export default function MapInterface() {
                    ],
                    ['coalesce', ['get', 'facing'], 'left']
                 ],
+                'icon-offset': ['case', ['has', 'iconOffset'], ['get', 'iconOffset'], ['literal', [0, 0]]],
                 'icon-size': 0.15,
                 'icon-rotate': 0, // Keep vertical
                 'icon-rotation-alignment': 'viewport', // Upright relative to screen
@@ -1354,6 +1416,7 @@ export default function MapInterface() {
                    ],
                    ['coalesce', ['get', 'facing'], 'left']
                 ],
+                'icon-offset': ['case', ['has', 'iconOffset'], ['get', 'iconOffset'], ['literal', [0, 0]]],
                 'icon-size': 0.15,
                 'icon-rotate': 0,
                 'icon-rotation-alignment': 'viewport',
@@ -1687,6 +1750,20 @@ export default function MapInterface() {
     m.on('mousemove', (e: any) => {
       setCoords({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     });
+
+    m.on('dragstart', () => {
+      setAnimatingFeatures(prev => {
+        let hasChanges = false;
+        const next = { ...prev };
+        Object.keys(next).forEach(id => {
+          if (next[id].isFpv) {
+            next[id] = { ...next[id], isFpv: false };
+            hasChanges = true;
+          }
+        });
+        return hasChanges ? next : prev;
+      });
+    });
     
     m.on('style.load', () => {
       // Add custom Viet Nam islands layer
@@ -1960,7 +2037,7 @@ export default function MapInterface() {
     }
   };
 
-  const toggleDrawMode = (mode: 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon') => {
+  const toggleDrawMode = (mode: 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon' | 'routing') => {
     if (activeMode === mode) {
       setActiveMode('view');
       draw.current?.changeMode('simple_select');
@@ -1973,7 +2050,7 @@ export default function MapInterface() {
     } else if (mode === 'draw_line') {
       draw.current?.changeMode('draw_line_string');
     } else {
-      // For annotate, image, icon we use native click handler, 
+      // For others we use native click handler, 
       // so we set Draw to neutral mode
       draw.current?.changeMode('simple_select');
     }
@@ -2030,8 +2107,8 @@ export default function MapInterface() {
     }
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (!map.current || !['annotate', 'image', 'icon'].includes(activeMode)) return;
+  const handleOverlayClick = async (e: React.MouseEvent) => {
+    if (!map.current || !['annotate', 'image', 'icon', 'routing'].includes(activeMode)) return;
 
     const rect = mapContainer.current?.getBoundingClientRect();
     if (!rect) return;
@@ -2043,6 +2120,34 @@ export default function MapInterface() {
     const lngLatObj = map.current.unproject([x, y]);
     const lngLat: [number, number] = [lngLatObj.lng, lngLatObj.lat];
     
+    if (activeMode === 'routing' && routingFocusRef.current) {
+      const query = `${lngLat[1].toFixed(5)}, ${lngLat[0].toFixed(5)}`;
+      try {
+         setIsSearching(true);
+         // Reverse geocoding
+         const resp = await fetch(`https://photon.komoot.io/reverse?lon=${lngLat[0]}&lat=${lngLat[1]}`);
+         const data = await resp.json();
+         const address = data.features?.[0]?.properties?.name || data.features?.[0]?.properties?.street || query;
+         
+         if (routingFocusRef.current === 'start') {
+           setRoutingStart({ query: address, coords: lngLat });
+           setRoutingFocus('end');
+         } else {
+           setRoutingEnd({ query: address, coords: lngLat });
+         }
+      } catch (err) {
+         if (routingFocusRef.current === 'start') {
+           setRoutingStart({ query, coords: lngLat });
+           setRoutingFocus('end');
+         } else {
+           setRoutingEnd({ query, coords: lngLat });
+         }
+      } finally {
+         setIsSearching(false);
+      }
+      return;
+    }
+
     setAssetModal({
       isOpen: true,
       type: activeMode as 'annotate' | 'image' | 'icon',
@@ -2233,6 +2338,15 @@ export default function MapInterface() {
               icon={<MapPin size={20} />} 
               label="Chèn biểu tượng" 
             />
+            <ToolButton 
+              active={activeMode === 'routing'} 
+              onClick={() => {
+                toggleDrawMode('routing');
+                setRoutingFocus('start');
+              }} 
+              icon={<Navigation size={20} />} 
+              label="Tạo chỉ đường" 
+            />
             
             <div className="h-px w-8 bg-border-main my-2 shrink-0" />
             
@@ -2318,6 +2432,12 @@ export default function MapInterface() {
                            const currentPitch = map.current.getPitch();
                            const currentBearing = map.current.getBearing();
                            
+                           let targetZoom = currentZoom;
+                           const isSatellite = key === 'SATELLITE' || key === 'HYBRID';
+                           if (isSatellite && targetZoom > 16) {
+                             targetZoom = 16;
+                           }
+                           
                            setMapStyleKey(key);
                            map.current.setStyle(style.url);
                            
@@ -2325,7 +2445,7 @@ export default function MapInterface() {
                            map.current.once('style.load', () => {
                              map.current?.jumpTo({
                                 center: currentCenter,
-                                zoom: currentZoom,
+                                zoom: targetZoom,
                                 pitch: currentPitch,
                                 bearing: currentBearing
                               });
@@ -2377,13 +2497,189 @@ export default function MapInterface() {
         <section className="flex-1 relative bg-zinc-200 overflow-hidden">
           <div ref={mapContainer} className="w-full h-full" />
 
-          {/* Asset Placement Overlay */}
-          {['annotate', 'image', 'icon'].includes(activeMode) && (
+          {/* Asset Placement & Routing Overlay */}
+          {['annotate', 'image', 'icon', 'routing'].includes(activeMode) && (
             <div 
               className="absolute inset-0 z-[100] cursor-crosshair"
               onClick={handleOverlayClick}
             />
           )}
+
+          {/* Routing Panel */}
+          <AnimatePresence>
+            {activeMode === 'routing' && (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="absolute top-4 left-4 w-80 bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl p-4 z-[200] border border-border-main"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-sm tracking-wide text-zinc-900 flex items-center gap-2">
+                    <Navigation size={16} className="text-accent" />
+                    Chỉ đường
+                  </h3>
+                  <button onClick={() => {
+                    setActiveMode('view');
+                    setRoutingFocus(null);
+                  }} className="text-text-muted hover:text-red-500 transition-colors p-1">
+                    <X size={16} />
+                  </button>
+                </div>
+                
+                <div className="space-y-3 relative">
+                  <div className="absolute left-[15px] top-6 bottom-6 w-0.5 bg-zinc-200" />
+                  
+                  <div className="relative">
+                    <div className="absolute left-[-2px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-[3px] border-text-main z-10" />
+                    <div className="pl-6 flex items-center bg-zinc-50 border border-zinc-200 rounded-xl overflow-hidden focus-within:border-accent focus-within:ring-1 focus-within:ring-accent ml-3 transition-colors">
+                       <input 
+                         type="text" 
+                         value={routingStart.query} 
+                         onChange={e => setRoutingStart({ ...routingStart, query: e.target.value })}
+                         onFocus={() => setRoutingFocus('start')}
+                         placeholder="Chọn điểm bắt đầu..."
+                         className="flex-1 px-3 py-2 text-sm bg-transparent outline-none"
+                         onKeyDown={async e => {
+                            if (e.key === 'Enter' && routingStart.query) {
+                              try {
+                                setIsSearching(true);
+                                const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(routingStart.query)}&limit=1`);
+                                const data = await resp.json();
+                                if (data.features?.length > 0) {
+                                  const coords = data.features[0].geometry.coordinates;
+                                  setRoutingStart({ query: data.features[0].properties.name || routingStart.query, coords });
+                                  setRoutingFocus('end');
+                                }
+                              } finally {
+                                setIsSearching(false);
+                              }
+                            }
+                         }}
+                       />
+                       {routingStart.coords && <Check size={16} className="text-green-500 mr-2" />}
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute left-[-2px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-accent border-[3px] border-white shadow-sm z-10" />
+                    <div className="pl-6 flex items-center bg-zinc-50 border border-zinc-200 rounded-xl overflow-hidden focus-within:border-accent focus-within:ring-1 focus-within:ring-accent ml-3 transition-colors">
+                       <input 
+                         type="text" 
+                         value={routingEnd.query} 
+                         onChange={e => setRoutingEnd({ ...routingEnd, query: e.target.value })}
+                         onFocus={() => setRoutingFocus('end')}
+                         placeholder="Chọn điểm đến..."
+                         className="flex-1 px-3 py-2 text-sm bg-transparent outline-none"
+                         onKeyDown={async e => {
+                            if (e.key === 'Enter' && routingEnd.query) {
+                              try {
+                                setIsSearching(true);
+                                const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(routingEnd.query)}&limit=1`);
+                                const data = await resp.json();
+                                if (data.features?.length > 0) {
+                                  const coords = data.features[0].geometry.coordinates;
+                                  setRoutingEnd({ query: data.features[0].properties.name || routingEnd.query, coords });
+                                }
+                              } finally {
+                                setIsSearching(false);
+                              }
+                            }
+                         }}
+                       />
+                       {routingEnd.coords && <Check size={16} className="text-green-500 mr-2" />}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex bg-zinc-100 p-1 rounded-lg">
+                    {['straight', 'real'].map((t) => (
+                      <button 
+                        key={t}
+                        onClick={() => setRouteType(t as any)}
+                        className={cn(
+                          "flex-1 py-1.5 flex justify-center rounded-md font-medium text-[10px] uppercase transition-colors tracking-tight",
+                          routeType === t ? "bg-white text-accent shadow-sm" : "text-text-muted hover:text-text-main"
+                        )}
+                      >
+                        {t === 'straight' ? 'Đường thẳng' : 'Đường thực'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex bg-zinc-100 p-1 rounded-lg">
+                    {['driving', 'motorbike', 'walking'].map((m) => (
+                      <button 
+                        key={m}
+                        onClick={() => setTravelMode(m as any)}
+                        className={cn(
+                          "flex-1 py-1.5 flex justify-center rounded-md font-medium text-xs transition-colors",
+                          travelMode === m ? "bg-white text-accent shadow-sm" : "text-text-muted hover:text-text-main"
+                        )}
+                      >
+                        {m === 'driving' ? <Car size={14} /> : m === 'motorbike' ? <Bike size={14} /> : <Footprints size={14} />}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={async () => {
+                      let start = routingStart.coords;
+                      let end = routingEnd.coords;
+                      
+                      const geocode = async (q: string) => {
+                         const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
+                         const json = await res.json();
+                         if (json.features?.length > 0) return json.features[0].geometry.coordinates as [number, number];
+                         return null;
+                      };
+
+                      if (!start && routingStart.query) {
+                        start = await geocode(routingStart.query);
+                      }
+                      if (!end && routingEnd.query) {
+                         end = await geocode(routingEnd.query);
+                      }
+
+                      if (start && end) {
+                        const newRouteId = Date.now().toString();
+                        const line = {
+                          type: 'Feature',
+                          id: newRouteId,
+                          geometry: { type: 'LineString', coordinates: [start, end] },
+                          properties: { isRoute: false, routeType: routeType, distance: '' }
+                        };
+                        draw.current?.add(line as any);
+
+                        if (routeType === 'real') {
+                          await fetchRealRoute(newRouteId, [start, end], travelMode);
+                        } else {
+                          const len = length(line as any, { units: 'kilometers' });
+                          const formattedLen = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m`;
+                          draw.current?.setFeatureProperty(newRouteId, 'distance', formattedLen);
+                          draw.current?.setFeatureProperty(newRouteId, 'routeType', 'straight');
+                          draw.current?.setFeatureProperty(newRouteId, 'originalWaypoints', [start, end]);
+                          draw.current?.setFeatureProperty(newRouteId, 'travelMode', travelMode);
+                          setDrawnFeatures(draw.current?.getAll().features || []);
+                        }
+                        
+                        setActiveMode('view');
+                        setRoutingFocus(null);
+                        setRoutingStart({ query: '', coords: null });
+                        setRoutingEnd({ query: '', coords: null });
+                      } else {
+                        alert('Vui lòng chọn cả điểm đi và điểm đến hợp lệ!');
+                      }
+                    }}
+                    disabled={(!routingStart.query && !routingStart.coords) || (!routingEnd.query && !routingEnd.coords) || isSearching}
+                    className="w-full py-2 bg-accent text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSearching ? <span className="animate-pulse">Đang tìm kiếm...</span> : 'Tạo tuyến đường'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Toggle for Data Panel (when hidden) */}
           {!showDataPanel && (
@@ -2805,105 +3101,6 @@ export default function MapInterface() {
             )}
           </AnimatePresence>
 
-          {/* Feature Edit Modal */}
-          <AnimatePresence>
-            {featureEditModal.isOpen && selectedFeature && (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="bg-white rounded-2xl shadow-2xl border border-border-main w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col"
-                >
-                  <div className="p-5 border-b border-border-main bg-zinc-50 flex items-center justify-between shrink-0">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
-                       {selectedFeature.geometry.type === 'Polygon' ? <Square className="text-accent" size={20} /> : <Route className="text-accent" size={20} />}
-                       Tùy chỉnh đối tượng
-                    </h3>
-                    <button 
-                      onClick={() => setFeatureEditModal({ isOpen: false, featureId: null })}
-                      className="p-1.5 hover:bg-zinc-100 rounded-full transition-colors text-text-muted"
-                    >
-                      <Plus className="rotate-45" size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                    <div className="space-y-4">
-                      <div className="p-3 bg-zinc-50 rounded-xl border border-border-main flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase text-text-muted tracking-widest">Loại đối tượng</p>
-                          <p className="text-sm font-semibold">{selectedFeature.geometry.type === 'Polygon' ? 'Vùng dữ liệu' : 'Tuyến đường'}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase text-text-muted tracking-widest">Kích thước</p>
-                          <p className="text-sm font-mono font-bold text-accent">{selectedFeature.properties.distance || 'N/A'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Màu sắc hiển thị</label>
-                      <div className="flex gap-4 items-center">
-                        <input 
-                          type="color" 
-                          value={selectedFeature.properties.color || '#3bb2d0'}
-                          onChange={(e) => {
-                            updateFeatureStyle(selectedFeature.id, 'color', e.target.value);
-                            updateFeatureStyle(selectedFeature.id, 'fillColor', e.target.value);
-                          }}
-                          className="w-16 h-10 rounded-lg cursor-pointer p-0 border-none shadow-sm"
-                        />
-                        <input 
-                          type="text"
-                          value={selectedFeature.properties.color || '#3bb2d0'}
-                          readOnly
-                          className="flex-1 px-4 py-2 bg-zinc-50 border border-border-main rounded-xl font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Độ dày đường kẻ</label>
-                        <span className="text-xs font-bold text-accent">{selectedFeature.properties.width || 2}px</span>
-                      </div>
-                      <input 
-                        type="range" min="1" max="12" 
-                        value={selectedFeature.properties.width || 2}
-                        onChange={(e) => updateFeatureStyle(selectedFeature.id, 'width', parseInt(e.target.value))}
-                        className="w-full h-8 accent-accent"
-                      />
-                    </div>
-
-                    {selectedFeature.geometry.type === 'Polygon' && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Độ đậm nền (Fill Opacity)</label>
-                          <span className="text-xs font-bold text-accent">{Math.round((selectedFeature.properties.fillOpacity || 0.1) * 100)}%</span>
-                        </div>
-                        <input 
-                          type="range" min="0" max="1" step="0.05"
-                          value={selectedFeature.properties.fillOpacity || 0.1}
-                          onChange={(e) => updateFeatureStyle(selectedFeature.id, 'fillOpacity', parseFloat(e.target.value))}
-                          className="w-full h-8 accent-accent"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="p-4 bg-zinc-50 border-t border-border-main shrink-0">
-                    <button 
-                      onClick={() => setFeatureEditModal({ isOpen: false, featureId: null })}
-                      className="w-full py-3 bg-zinc-900 text-white font-bold rounded-xl hover:bg-zinc-800 transition-colors shadow-lg active:scale-[0.98] transition-transform"
-                    >
-                      Xác nhận thay đổi
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
         </section>
 
         {/* Right Data Panel */}
@@ -3046,6 +3243,17 @@ export default function MapInterface() {
                        >
                          <RotateCcw size={16} />
                        </button>
+
+                       <button 
+                        onClick={() => updateAnimationConfig(selectedFeature.id, { isFpv: !animatingFeatures[selectedFeature.id]?.isFpv })}
+                        className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                          animatingFeatures[selectedFeature.id]?.isFpv ? "bg-amber-500 text-white shadow-md hover:bg-amber-600" : "bg-zinc-100 text-text-muted hover:bg-zinc-200"
+                        )}
+                        title="Góc nhìn người thứ nhất (FPV)"
+                       >
+                         <Video size={16} />
+                       </button>
                     </div>
                   </div>
                 )}
@@ -3115,7 +3323,6 @@ export default function MapInterface() {
                   )}
                   onClick={() => {
                     setSelectedFeatureId(feat.id);
-                    setFeatureEditModal({ isOpen: true, featureId: feat.id });
                     if (draw.current) {
                       draw.current.changeMode('simple_select', { featureIds: [feat.id] });
                       

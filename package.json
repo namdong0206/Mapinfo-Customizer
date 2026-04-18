@@ -17,6 +17,7 @@
     "@turf/along": "^7.3.4",
     "@turf/bearing": "^7.3.4",
     "@turf/centroid": "^7.3.4",
+    "@turf/destination": "^7.3.4",
     "@turf/line-distance": "^4.7.3",
     "@turf/turf": "^7.3.4",
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
