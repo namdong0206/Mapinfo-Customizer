@@ -42,7 +42,8 @@ import {
   Eye,
   EyeOff,
   Video,
-  Navigation
+  Navigation,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -2072,6 +2073,16 @@ export default function MapInterface() {
     }
   };
 
+  const editRoute = async (feature: any) => {
+    const { originalWaypoints, travelMode, routeType } = feature.properties;
+    setRoutingStart({ query: '', coords: originalWaypoints[0] });
+    setRoutingEnd({ query: '', coords: originalWaypoints[1] });
+    setTravelMode(travelMode);
+    setRouteType(routeType);
+    setActiveMode('routing');
+    setRoutingFocus('start');
+  };
+
   const toggle3D = () => {
     if (!map.current) return;
     const next3D = !is3D;
@@ -3181,6 +3192,19 @@ export default function MapInterface() {
                   <Route size={12} />
                   Kết nối địa điểm mới
                 </button>
+
+                {selectedFeature.properties.originalWaypoints && (
+                  <button 
+                    onClick={() => editRoute(selectedFeature)}
+                    className={cn(
+                      "w-full py-1.5 rounded text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2",
+                      "bg-blue-600 text-white hover:bg-blue-700"
+                    )}
+                  >
+                    <Edit2 size={12} />
+                    Sửa tuyến đường
+                  </button>
+                )}
 
                 {selectedFeature.properties.routeGeometry && (
                   <div className="pt-3 border-t border-blue-200 mt-3 space-y-3">
