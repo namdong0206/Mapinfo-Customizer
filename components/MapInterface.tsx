@@ -444,7 +444,7 @@ export default function MapInterface() {
   }, [is3D]);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       const isOutsidePicker = layerPickerRef.current && !layerPickerRef.current.contains(event.target as Node);
       const isOutsideButton = layerButtonRef.current && !layerButtonRef.current.contains(event.target as Node);
       
@@ -454,11 +454,14 @@ export default function MapInterface() {
     }
     if (showLayerPicker) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [showLayerPicker]);
 
@@ -1821,7 +1824,7 @@ export default function MapInterface() {
       {/* Main Content Area */}
       <main className="flex flex-1 overflow-hidden relative">
         {/* Sidebar Tool Selection */}
-        <aside className="w-16 bg-white border-r border-border-main flex flex-col items-center py-5 gap-4 z-20 shrink-0">
+        <aside className="w-16 bg-white border-r border-border-main flex flex-col items-center py-5 gap-4 z-20 shrink-0 overflow-y-auto overflow-x-hidden custom-scrollbar h-full">
           <ToolButton 
             active={activeMode === 'draw_polygon'} 
             onClick={() => toggleDrawMode('draw_polygon')}
@@ -1910,11 +1913,11 @@ export default function MapInterface() {
               {showLayerPicker && (
                 <motion.div 
                   ref={layerPickerRef}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -10, y: 10 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, x: -10, y: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-full ml-3 bottom-0 w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-50 flex flex-col gap-1"
+                  className="absolute left-full ml-3 bottom-0 w-[calc(100vw-80px)] max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[60] flex flex-col gap-1 md:w-64"
                 >
                   <div className="px-2 py-1 flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Bản đồ nền</span>
@@ -2757,7 +2760,7 @@ function ToolButton({ active, onClick, icon, label }: { active: boolean; onClick
     >
       {icon}
       {!active && (
-        <div className="absolute left-full ml-3 px-2 py-1 bg-text-main text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-md">
+        <div className="absolute left-full ml-3 px-2 py-1 bg-text-main text-white text-[10px] rounded opacity-0 lg:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-md">
           {label}
         </div>
       )}
