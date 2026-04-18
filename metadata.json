@@ -1,0 +1,8 @@
+{
+  "name": "Bản đồ Việt Nam",
+  "description": "Công cụ bản đồ chuyên nghiệp dành cho biên tập viên: khoanh vùng, đánh dấu tuyến đường, chú thích hình ảnh và xuất ảnh vùng tùy chọn.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}
