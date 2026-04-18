@@ -32,13 +32,24 @@ import {
   X,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Play,
+  Pause,
+  FastForward,
+  Rewind,
+  Zap,
+  RotateCcw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import length from '@turf/length';
 import centroid from '@turf/centroid';
+import along from '@turf/along';
+import bearing from '@turf/bearing';
+import lineDistance from '@turf/line-distance';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -372,6 +383,49 @@ const ICON_PATHS: Record<string, string> = {
   info: `<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>`
 };
 
+const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse' | 'float' | 'shake' }> = {
+  '3d-accident': { 
+    url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Police%20car%20light/3D/police_car_light_3d.png', 
+    label: 'Tai nạn GT',
+    anim: 'shake'
+  },
+  '3d-fire-house': { 
+    url: '/11442696.png', 
+    label: 'Cháy nhà',
+    anim: 'pulse'
+  },
+  '3d-explosion': { 
+    url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Collision/3D/collision_3d.png', 
+    label: 'Cháy nổ',
+    anim: 'pulse'
+  },
+  '3d-flood': { 
+    url: '/9211918.png', 
+    label: 'Mưa lũ',
+    anim: 'float'
+  },
+  '3d-landslide': { 
+    url: '/263720581.png', 
+    label: 'Sụt lở',
+    anim: 'shake'
+  },
+  '3d-fire-forest': { 
+    url: '/9211928.png', 
+    label: 'Cháy rừng',
+    anim: 'pulse'
+  },
+  '3d-storm': { 
+    url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Cloud%20with%20lightning%20and%20rain/3D/cloud_with_lightning_and_rain_3d.png', 
+    label: 'Bão lũ',
+    anim: 'float'
+  },
+  '3d-earthquake': { 
+    url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Derelict%20house/3D/derelict_house_3d.png', 
+    label: 'Động đất',
+    anim: 'shake'
+  }
+};
+
 export default function MapInterface() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -379,7 +433,7 @@ export default function MapInterface() {
   
   const [activeMode, setActiveMode] = useState<'view' | 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon'>('view');
   const [routeType, setRouteType] = useState<'straight' | 'real'>('straight');
-  const [travelMode, setTravelMode] = useState<'driving' | 'cycling' | 'walking'>('driving');
+  const [travelMode, setTravelMode] = useState<'driving' | 'motorbike' | 'walking'>('driving');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const annotationsRef = useRef<Annotation[]>([]);
   const markerInstances = useRef<Record<string, maplibregl.Marker>>({});
@@ -420,6 +474,16 @@ export default function MapInterface() {
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
+  
+  // Animation State
+  const [animatingFeatures, setAnimatingFeatures] = useState<Record<string, {
+    progress: number; // 0 to 1
+    speed: number;    // meters per frame (approx)
+    isPlaying: boolean;
+    direction: 1 | -1;
+    visible: boolean; // toggle visibility
+  }>>({});
+  const animationFrameRef = useRef<number | null>(null);
   
   const [featureEditModal, setFeatureEditModal] = useState<{
     isOpen: boolean,
@@ -472,6 +536,165 @@ export default function MapInterface() {
   useEffect(() => {
     adminBoundaryRef.current = showAdminBoundaries;
   }, [showAdminBoundaries]);
+
+  // Route Animation Engine
+  useEffect(() => {
+    if (!map.current) return;
+    const m = map.current;
+
+    const animate = () => {
+      const ids = Object.keys(animatingFeatures);
+      if (ids.length === 0) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      setAnimatingFeatures(prev => {
+        const next = { ...prev };
+        let hasChanges = false;
+
+        ids.forEach(id => {
+          const feat = drawnFeatures.find(f => f.id === id);
+          if (!feat || !feat.properties?.routeGeometry) return;
+
+          const config = next[id];
+          const totalDist = length({ type: 'Feature', geometry: feat.properties.routeGeometry, properties: {} } as any, { units: 'meters' });
+          if (totalDist === 0) return;
+
+          let newProgress = config.progress;
+          if (config.isPlaying) {
+            const metersPerSecond = config.speed / 3.6;
+            const metersPerTick = metersPerSecond / 60; 
+            
+            let delta = (metersPerTick / totalDist) * config.direction;
+            newProgress = config.progress + delta;
+
+            if (newProgress > 1) newProgress = 0;
+            if (newProgress < 0) newProgress = 1;
+
+            next[id] = { ...config, progress: newProgress };
+            hasChanges = true;
+          }
+
+          const vehicleSourceId = `vehicle-${id}`;
+          const source = m.getSource(vehicleSourceId) as maplibregl.GeoJSONSource;
+          if (source) {
+            const point = along(feat.properties.routeGeometry, newProgress * (totalDist / 1000), { units: 'kilometers' });
+            const nextPointDist = Math.min(newProgress * (totalDist/1000) + 0.005, totalDist/1000);
+            const nextPoint = along(feat.properties.routeGeometry, nextPointDist, { units: 'kilometers' });
+            const b = bearing(point, nextPoint);
+            const finalBearing = config.direction === 1 ? b : b + 180;
+            // Microsoft emojis face left by default. 
+            // Bearing > 0 means heading East (Right), bearing < 0 means heading West (Left).
+            const facing = (finalBearing > 0) ? 'right' : 'left';
+
+            source.setData({
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                geometry: point.geometry,
+                properties: { 
+                  bearing: finalBearing,
+                  facing: facing,
+                  travelMode: feat.properties?.travelMode || travelMode,
+                  visible: config.visible !== false
+                }
+              }]
+            });
+          }
+        });
+
+        return hasChanges ? next : prev;
+      });
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [drawnFeatures, animatingFeatures]);
+
+  const toggleAnimation = (id: string) => {
+    setAnimatingFeatures(prev => {
+      const current = prev[id] || { progress: 0, speed: 60, isPlaying: false, direction: 1, visible: true };
+      return {
+        ...prev,
+        [id]: { ...current, isPlaying: !current.isPlaying }
+      };
+    });
+  };
+
+  const updateAnimationConfig = (id: string, updates: Partial<any>) => {
+    setAnimatingFeatures(prev => {
+      const current = prev[id] || { progress: 0, speed: 60, isPlaying: false, direction: 1, visible: true };
+      return {
+        ...prev,
+        [id]: { ...current, ...updates }
+      };
+    });
+  };
+
+  const setupImages = useCallback(async (m: maplibregl.Map) => {
+    const images = [
+      { base: 'vehicle-car', url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Automobile/3D/automobile_3d.png' },
+      { base: 'vehicle-motorbike', url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Motorcycle/3D/motorcycle_3d.png' },
+      { base: 'vehicle-walking', url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Person%20walking/Default/3D/person_walking_3d_default.png' },
+    ];
+
+    for (const img of images) {
+      if (!m.hasImage(`${img.base}-left`)) {
+        try {
+          const image = await m.loadImage(img.url);
+          if (image) {
+            // Add original (facing left)
+            const sourceData = image.data || image;
+            if (!m.hasImage(`${img.base}-left`)) m.addImage(`${img.base}-left`, sourceData);
+            
+            // Create and add flipped version (facing right)
+            if (!m.hasImage(`${img.base}-right`)) {
+              const width = sourceData.width || (image as any).width;
+              const height = sourceData.height || (image as any).height;
+              
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+
+                if ((sourceData as any).data && ((sourceData as any).data instanceof Uint8Array || (sourceData as any).data instanceof Uint8ClampedArray)) {
+                  // Raw pixel data
+                  const imgDataObj = new ImageData(new Uint8ClampedArray((sourceData as any).data), width, height);
+                  const offscreenSchema = document.createElement('canvas');
+                  offscreenSchema.width = width;
+                  offscreenSchema.height = height;
+                  offscreenSchema.getContext('2d')?.putImageData(imgDataObj, 0, 0);
+                  ctx.drawImage(offscreenSchema, 0, 0);
+                } else if (sourceData instanceof ImageData) {
+                   const offscreenSchema = document.createElement('canvas');
+                   offscreenSchema.width = width;
+                   offscreenSchema.height = height;
+                   offscreenSchema.getContext('2d')?.putImageData(sourceData, 0, 0);
+                   ctx.drawImage(offscreenSchema, 0, 0);
+                } else {
+                  // HTMLImageElement or ImageBitmap
+                  ctx.drawImage(sourceData as any, 0, 0);
+                }
+                
+                const flippedData = ctx.getImageData(0, 0, width, height);
+                m.addImage(`${img.base}-right`, flippedData);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing image ${img.base}:`, error);
+        }
+      }
+    }
+  }, []);
 
   const updateBuildings3D = useCallback((m: maplibregl.Map, active: boolean) => {
     if (!m) return;
@@ -671,6 +894,34 @@ export default function MapInterface() {
             </div>
           `;
         } else if (ann.icon) {
+          if (ann.icon.startsWith('3d-')) {
+            const iconData = DISASTER_ICONS[ann.icon];
+            const animClass = iconData?.anim === 'pulse' ? 'animate-pulse-slow' : iconData?.anim === 'float' ? 'animate-float' : iconData?.anim === 'shake' ? 'animate-shake-3d' : '';
+            
+            // Special composite for forest fire
+            if (ann.icon === '3d-fire-forest') {
+              return `
+                <div class="flex flex-col items-center gap-1">
+                  <div class="relative w-14 h-14 flex items-center justify-center group">
+                    <img src="${iconData?.url}" class="w-full h-full object-contain" />
+                    <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Fire/3D/fire_3d.png" 
+                         class="absolute bottom-0 w-8 h-8 object-contain ${animClass}" />
+                  </div>
+                  <span style="${textStyle}">${ann.text || ''}</span>
+                </div>
+              `;
+            }
+
+            return `
+              <div class="flex flex-col items-center gap-1">
+                <div class="relative group">
+                  <div class="absolute inset-0 bg-blue-400/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <img src="${iconData?.url}" class="w-12 h-12 object-contain relative z-10 ${animClass}" style="filter: drop-shadow(0 10px 8px rgba(0,0,0,0.2));" />
+                </div>
+                <span style="${textStyle}">${ann.text || ''}</span>
+              </div>
+            `;
+          }
           const path = ICON_PATHS[ann.icon] || ICON_PATHS['flag'];
           return `
             <div class="flex flex-col items-center gap-1">
@@ -758,35 +1009,44 @@ export default function MapInterface() {
   const fetchRealRoute = useCallback(async (featureId: string, waypoints: number[][], mode: string) => {
     try {
       const query = waypoints.map(c => c.join(',')).join(';');
-      const service = mode === 'walking' ? 'routed-foot' : mode === 'cycling' ? 'routed-bike' : 'routed-car';
+      const service = mode === 'walking' ? 'routed-foot' : mode === 'motorbike' ? 'routed-car' : 'routed-car';
       
       const response = await fetch(`https://routing.openstreetmap.de/${service}/route/v1/driving/${query}?geometries=geojson`);
       const data = await response.json();
 
-      if (data.routes && data.routes.length > 0) {
-        const routeGeometry = data.routes[0].geometry;
-        
-        if (draw.current) {
-          // Robust property setting
-          draw.current.setFeatureProperty(featureId, 'routeGeometry', routeGeometry);
-          draw.current.setFeatureProperty(featureId, 'isRealRoute', true); // Simple flag for style filtering
-          draw.current.setFeatureProperty(featureId, 'isRoute', true);
-          draw.current.setFeatureProperty(featureId, 'routeType', 'real');
-          draw.current.setFeatureProperty(featureId, 'travelMode', mode);
-          
-          const len = length({ type: 'Feature', geometry: routeGeometry, properties: {} } as any, { units: 'kilometers' });
-          const formattedLen = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0)} m`;
-          draw.current.setFeatureProperty(featureId, 'distance', formattedLen);
-          
-          // CRITICAL: Force Draw to sync with style filters by re-adding the feature
-          const updatedFeature = draw.current.get(featureId);
-          if (updatedFeature) {
-            draw.current.add(updatedFeature as any);
+          if (data.routes && data.routes.length > 0) {
+            const routeGeometry = data.routes[0].geometry;
+            
+            if (draw.current) {
+              // Robust property setting
+              draw.current.setFeatureProperty(featureId, 'routeGeometry', routeGeometry);
+              draw.current.setFeatureProperty(featureId, 'isRealRoute', true); 
+              draw.current.setFeatureProperty(featureId, 'isRoute', true);
+              draw.current.setFeatureProperty(featureId, 'routeType', 'real');
+              draw.current.setFeatureProperty(featureId, 'travelMode', mode);
+              
+              const len = length({ type: 'Feature', geometry: routeGeometry, properties: {} } as any, { units: 'kilometers' });
+              const formattedLen = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0)} m`;
+              draw.current.setFeatureProperty(featureId, 'distance', formattedLen);
+              
+              // CRITICAL: Force Draw to sync with style filters by re-adding the feature
+              const updatedFeature = draw.current.get(featureId);
+              if (updatedFeature) {
+                draw.current.add(updatedFeature as any);
+              }
+              
+              setDrawnFeatures([...draw.current.getAll().features]);
+
+              // Initialize animation state if not exists
+              setAnimatingFeatures(prev => {
+                if (prev[featureId]) return prev;
+                return {
+                  ...prev,
+                  [featureId]: { progress: 0, speed: 60, isPlaying: false, direction: 1, visible: true }
+                };
+              });
+            }
           }
-          
-          setDrawnFeatures([...draw.current.getAll().features]);
-        }
-      }
     } catch (error) {
       console.error('Error fetching real route:', error);
     }
@@ -839,9 +1099,17 @@ export default function MapInterface() {
            const formattedLen = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0)} m`;
            d.setFeatureProperty(feature.id, 'distance', formattedLen);
            d.setFeatureProperty(feature.id, 'routeType', 'straight');
+           d.setFeatureProperty(feature.id, 'routeGeometry', feature.geometry); // Store geometry for animation
+           d.setFeatureProperty(feature.id, 'travelMode', travelMode);
            d.setFeatureProperty(feature.id, 'originalWaypoints', lineCoords);
            setDrawnFeatures(d.getAll().features);
         }
+
+        // Initialize animation state for new route
+        setAnimatingFeatures(prev => ({
+          ...prev,
+          [feature.id]: { progress: 0, speed: 60, isPlaying: false, direction: 1, visible: true }
+        }));
       }
     }
   }, [routeType, travelMode, fetchRealRoute]);
@@ -870,6 +1138,9 @@ export default function MapInterface() {
            const len = length(feature, { units: 'kilometers' });
            const formattedLen = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0)} m`;
            d.setFeatureProperty(feature.id, 'distance', formattedLen);
+           d.setFeatureProperty(feature.id, 'routeType', 'straight');
+           d.setFeatureProperty(feature.id, 'routeGeometry', feature.geometry); // Store geometry for animation
+           d.setFeatureProperty(feature.id, 'travelMode', currentTravelMode); // Sync mode
            setDrawnFeatures(d.getAll().features);
         }
       }
@@ -921,6 +1192,15 @@ export default function MapInterface() {
              
              draw.current?.add(straightLine);
              setDrawnFeatures(draw.current?.getAll().features || []);
+
+             // Initialize animation for transition
+             setAnimatingFeatures(prev => {
+               if (prev[feature.id]) return prev;
+               return {
+                 ...prev,
+                 [feature.id]: { progress: 0, speed: 60, isPlaying: false, direction: 1, visible: true }
+               };
+             });
           }
         }
       }
@@ -974,6 +1254,7 @@ export default function MapInterface() {
           }
         }));
 
+      // 1. Initialize Route Layers and Data first, so they stay BELOW vehicles
       if (!m.getSource('real-routes')) {
         m.addSource('real-routes', {
           type: 'geojson',
@@ -1012,12 +1293,107 @@ export default function MapInterface() {
           });
         }
       }
+
+      // 2. Update animation layers (vehicles) ON TOP of routes
+      drawnFeatures.forEach(f => {
+        if (f.properties?.routeGeometry) {
+          const sourceId = `vehicle-${f.id}`;
+          const layerId = `vehicle-layer-${f.id}`;
+          
+          if (!m.getSource(sourceId)) {
+            m.addSource(sourceId, {
+              type: 'geojson',
+              data: { type: 'FeatureCollection', features: [] }
+            });
+
+            // Use vehicle-specific icons based on travelMode and movement direction
+            m.addLayer({
+              id: layerId,
+              type: 'symbol',
+              source: sourceId,
+              layout: {
+                'icon-image': [
+                   'concat',
+                   ['match', ['get', 'travelMode'],
+                      'driving', 'vehicle-car-',
+                      'motorbike', 'vehicle-motorbike-',
+                      'walking', 'vehicle-walking-',
+                      'vehicle-car-'
+                   ],
+                   ['coalesce', ['get', 'facing'], 'left']
+                ],
+                'icon-size': 0.15,
+                'icon-rotate': 0, // Keep vertical
+                'icon-rotation-alignment': 'viewport', // Upright relative to screen
+                'icon-pitch-alignment': 'viewport',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true
+              },
+              paint: {
+                'icon-opacity': ['case', ['boolean', ['get', 'visible'], true], 1, 0]
+              }
+            });
+            // Move layer to front so vehicles stay on top
+            if (m.getLayer(layerId)) {
+              m.moveLayer(layerId);
+            }
+          } else if (!m.getLayer(layerId)) {
+             // Handle case where style changed and layers were removed but legacy sources remained
+             m.addLayer({
+              id: layerId,
+              type: 'symbol',
+              source: sourceId,
+              layout: {
+                'icon-image': [
+                   'concat',
+                   ['match', ['get', 'travelMode'],
+                      'driving', 'vehicle-car-',
+                      'motorbike', 'vehicle-motorbike-',
+                      'walking', 'vehicle-walking-',
+                      'vehicle-car-'
+                   ],
+                   ['coalesce', ['get', 'facing'], 'left']
+                ],
+                'icon-size': 0.15,
+                'icon-rotate': 0,
+                'icon-rotation-alignment': 'viewport',
+                'icon-pitch-alignment': 'viewport',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true
+              },
+              paint: {
+                'icon-opacity': ['case', ['boolean', ['get', 'visible'], true], 1, 0]
+              }
+            });
+            // Move layer to front
+            if (m.getLayer(layerId)) {
+               m.moveLayer(layerId);
+            }
+          } else {
+            // Already exists, just ensure it's on top
+            m.moveLayer(layerId);
+          }
+        }
+      });
+
+      // Cleanup old animation layers
+      const currentVehicleSourceIds = new Set(drawnFeatures.filter(f => f.properties?.routeGeometry).map(f => `vehicle-${f.id}`));
+      m.getStyle().layers.forEach((l: any) => {
+        if (l.id.startsWith('vehicle-layer-') && !currentVehicleSourceIds.has(l.source)) {
+          m.removeLayer(l.id);
+          m.removeSource(l.id.replace('vehicle-layer-', 'vehicle-'));
+        }
+      });
     };
 
-    updateRouteLayer();
-    m.on('style.load', updateRouteLayer);
+    updateRouteLayer(); // Call initially and on state change
+
+    m.on('style.load', () => {
+      setupImages(m);
+      updateRouteLayer();
+    });
     return () => { m.off('style.load', updateRouteLayer); };
-  }, [drawnFeatures, selectedFeatureId]);
+  }, [drawnFeatures, selectedFeatureId, setupImages]);
 
   // Initialize Map
   useEffect(() => {
@@ -1051,6 +1427,7 @@ export default function MapInterface() {
     map.current = m;
 
     m.on('load', () => {
+      setupImages(m);
       // Re-initialize controls for absolute certainty
       m.addControl(new maplibregl.NavigationControl({
         showCompass: true,
@@ -1234,7 +1611,7 @@ export default function MapInterface() {
               type: 'Feature',
               id: newRouteId,
               geometry: { type: 'LineString', coordinates: [origin, destination] },
-              properties: { isRoute: false, routeType: 'straight', distance: '' }
+              properties: { isRoute: true, routeType: 'straight', distance: '', travelMode: travelMode }
             };
             const len = length(line as any, { units: 'kilometers' });
             line.properties.distance = len > 1 ? `${len.toFixed(2)} km` : `${(len * 1000).toFixed(0)} m`;
@@ -1552,7 +1929,7 @@ export default function MapInterface() {
         document.getElementById('hidden-geocoder')?.remove();
       }
     };
-  }, []);
+  }, [setupImages]);
 
   const exportMap = async () => {
     if (!mapContainer.current) return;
@@ -1824,79 +2201,81 @@ export default function MapInterface() {
       {/* Main Content Area */}
       <main className="flex flex-1 overflow-hidden relative">
         {/* Sidebar Tool Selection */}
-        <aside className="w-16 bg-white border-r border-border-main flex flex-col items-center py-5 gap-4 z-20 shrink-0 overflow-y-auto overflow-x-hidden custom-scrollbar h-full">
-          <ToolButton 
-            active={activeMode === 'draw_polygon'} 
-            onClick={() => toggleDrawMode('draw_polygon')}
-            icon={<Square size={20} />} 
-            label="Square"
-          />
-          <ToolButton 
-            active={activeMode === 'draw_line'} 
-            onClick={() => toggleDrawMode('draw_line')}
-            icon={<Route size={20} />} 
-            label="Line"
-          />
-          <ToolButton 
-            active={activeMode === 'annotate'} 
-            onClick={() => toggleDrawMode('annotate')}
-            icon={<Info size={20} />} 
-            label="Ghi chú" 
-          />
-          <ToolButton 
-            active={activeMode === 'image'} 
-            onClick={() => toggleDrawMode('image')} 
-            icon={<Download size={20} className="rotate-180" />} 
-            label="Chèn ảnh" 
-          />
-          <ToolButton 
-            active={activeMode === 'icon'} 
-            onClick={() => toggleDrawMode('icon')} 
-            icon={<MapPin size={20} />} 
-            label="Chèn biểu tượng" 
-          />
-          
-          <div className="h-px w-8 bg-border-main my-2" />
-          
-          <button 
-            onClick={() => setRouteType(t => t === 'straight' ? 'real' : 'straight')}
-            className={cn(
-              "w-10 h-10 rounded-lg transition-all flex flex-col items-center justify-center gap-1",
-              routeType === 'real' ? "bg-blue-50 text-accent ring-1 ring-blue-200" : "bg-zinc-50 text-text-muted hover:bg-zinc-100"
+        <aside className="w-16 bg-white border-r border-border-main flex flex-col items-center py-5 gap-4 z-20 shrink-0 h-full relative">
+          <div className="flex flex-col items-center gap-4 overflow-y-auto overflow-x-visible custom-scrollbar w-full flex-1 pb-4">
+            <ToolButton 
+              active={activeMode === 'draw_polygon'} 
+              onClick={() => toggleDrawMode('draw_polygon')}
+              icon={<Square size={20} />} 
+              label="Square"
+            />
+            <ToolButton 
+              active={activeMode === 'draw_line'} 
+              onClick={() => toggleDrawMode('draw_line')}
+              icon={<Route size={20} />} 
+              label="Line"
+            />
+            <ToolButton 
+              active={activeMode === 'annotate'} 
+              onClick={() => toggleDrawMode('annotate')}
+              icon={<Info size={20} />} 
+              label="Ghi chú" 
+            />
+            <ToolButton 
+              active={activeMode === 'image'} 
+              onClick={() => toggleDrawMode('image')} 
+              icon={<Download size={20} className="rotate-180" />} 
+              label="Chèn ảnh" 
+            />
+            <ToolButton 
+              active={activeMode === 'icon'} 
+              onClick={() => toggleDrawMode('icon')} 
+              icon={<MapPin size={20} />} 
+              label="Chèn biểu tượng" 
+            />
+            
+            <div className="h-px w-8 bg-border-main my-2 shrink-0" />
+            
+            <button 
+              onClick={() => setRouteType(t => t === 'straight' ? 'real' : 'straight')}
+              className={cn(
+                "w-10 h-10 rounded-lg transition-all flex flex-col items-center justify-center gap-1 shrink-0",
+                routeType === 'real' ? "bg-blue-50 text-accent ring-1 ring-blue-200" : "bg-zinc-50 text-text-muted hover:bg-zinc-100"
+              )}
+              title={routeType === 'real' ? "Đang dùng đường thực" : "Đang dùng đường tuyến tính"}
+            >
+              <Route size={18} />
+              <span className="text-[9px] font-bold uppercase tracking-tight leading-none">{routeType === 'real' ? 'Real' : 'Air'}</span>
+            </button>
+
+            {routeType === 'real' && (
+              <div className="flex flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main w-10 items-center shrink-0">
+                <button 
+                  onClick={() => setTravelMode('driving')} 
+                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'driving' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  title="Ô-tô"
+                >
+                  <Car size={16} />
+                </button>
+                <button 
+                  onClick={() => setTravelMode('motorbike')} 
+                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'motorbike' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  title="Xe máy"
+                >
+                  <Bike size={16} />
+                </button>
+                <button 
+                  onClick={() => setTravelMode('walking')} 
+                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'walking' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  title="Đi bộ"
+                >
+                  <Footprints size={16} />
+                </button>
+              </div>
             )}
-            title={routeType === 'real' ? "Đang dùng đường thực" : "Đang dùng đường tuyến tính"}
-          >
-            <Route size={18} />
-            <span className="text-[9px] font-bold uppercase tracking-tight leading-none">{routeType === 'real' ? 'Real' : 'Air'}</span>
-          </button>
+          </div>
 
-          {routeType === 'real' && (
-            <div className="flex flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main w-10 items-center">
-              <button 
-                onClick={() => setTravelMode('driving')} 
-                className={cn("p-1.5 rounded-md transition-all", travelMode === 'driving' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
-                title="Ô-tô"
-              >
-                <Car size={16} />
-              </button>
-              <button 
-                onClick={() => setTravelMode('cycling')} 
-                className={cn("p-1.5 rounded-md transition-all", travelMode === 'cycling' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
-                title="Xe máy"
-              >
-                <Bike size={16} />
-              </button>
-              <button 
-                onClick={() => setTravelMode('walking')} 
-                className={cn("p-1.5 rounded-md transition-all", travelMode === 'walking' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
-                title="Đi bộ"
-              >
-                <Footprints size={16} />
-              </button>
-            </div>
-          )}
-
-          <div className="mt-auto flex flex-col gap-4 mb-2 relative group">
+          <div className="mt-auto flex flex-col gap-4 mb-2 relative">
             <button 
               ref={layerButtonRef}
               onClick={() => setShowLayerPicker(!showLayerPicker)}
@@ -1917,7 +2296,7 @@ export default function MapInterface() {
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   exit={{ opacity: 0, x: -10, y: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-full ml-3 bottom-0 w-[calc(100vw-80px)] max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[60] flex flex-col gap-1 md:w-64"
+                  className="absolute left-full ml-3 bottom-0 w-[calc(100vw-80px)] max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[100] flex flex-col gap-1 md:w-64"
                 >
                   <div className="px-2 py-1 flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Bản đồ nền</span>
@@ -1945,11 +2324,11 @@ export default function MapInterface() {
                            // Explicitly re-apply camera settings after style load to prevent jumps
                            map.current.once('style.load', () => {
                              map.current?.jumpTo({
-                               center: currentCenter,
-                               zoom: currentZoom,
-                               pitch: currentPitch,
-                               bearing: currentBearing
-                             });
+                                center: currentCenter,
+                                zoom: currentZoom,
+                                pitch: currentPitch,
+                                bearing: currentBearing
+                              });
                            });
                            
                            setShowLayerPicker(false);
@@ -2149,7 +2528,7 @@ export default function MapInterface() {
                         <div className="flex gap-1.5 overflow-x-auto pb-1 bg-zinc-100 p-1 rounded-xl">
                           {([
                             { id: 'driving', icon: <Car size={14} /> },
-                            { id: 'cycling', icon: <Bike size={14} /> },
+                            { id: 'motorbike', icon: <Bike size={14} /> },
                             { id: 'walking', icon: <Footprints size={14} /> }
                           ] as const).map(mode => (
                             <button
@@ -2311,7 +2690,24 @@ export default function MapInterface() {
 
                     {assetModal.type === 'icon' && (
                        <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng hiện đại 3D</label>
+                        <div className="grid grid-cols-4 gap-2 mb-4">
+                          {Object.entries(DISASTER_ICONS).map(([id, data]) => (
+                            <button 
+                              key={id}
+                              onClick={() => setAssetModal(prev => ({ ...prev, icon: id, text: data.label }))}
+                              className={cn(
+                                "p-2 rounded-xl border transition-all flex flex-col items-center gap-1 group",
+                                assetModal.icon === id ? "bg-accent/10 border-accent shadow-sm" : "bg-white border-border-main hover:bg-zinc-50"
+                              )}
+                            >
+                               <img src={data.url} className="w-8 h-8 object-contain group-hover:scale-110 transition-transform" alt={data.label} />
+                               <span className="text-[8px] font-bold text-center leading-tight truncate w-full">{data.label}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng cơ bản</label>
                         <div className="grid grid-cols-5 gap-2">
                           {Object.keys(ICON_PATHS).map(ic => {
                             const IconComponent = ({ name }: { name: string }) => {
@@ -2588,6 +2984,71 @@ export default function MapInterface() {
                   <Route size={12} />
                   Kết nối địa điểm mới
                 </button>
+
+                {selectedFeature.properties.routeGeometry && (
+                  <div className="pt-3 border-t border-blue-200 mt-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-accent uppercase tracking-wider">Mô phỏng di chuyển</span>
+                      <div className="flex bg-zinc-100 p-0.5 rounded-md">
+                        <button 
+                          onClick={() => updateAnimationConfig(selectedFeature.id, { direction: -1 })}
+                          className={cn("p-1 rounded", (animatingFeatures[selectedFeature.id]?.direction === -1) ? "bg-white shadow-sm text-accent" : "text-text-muted")}
+                        >
+                          <Rewind size={12} />
+                        </button>
+                        <button 
+                          onClick={() => updateAnimationConfig(selectedFeature.id, { direction: 1 })}
+                          className={cn("p-1 rounded", (animatingFeatures[selectedFeature.id]?.direction === 1 || !animatingFeatures[selectedFeature.id]) ? "bg-white shadow-sm text-accent" : "text-text-muted")}
+                        >
+                          <FastForward size={12} />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => updateAnimationConfig(selectedFeature.id, { visible: !(animatingFeatures[selectedFeature.id]?.visible !== false) })}
+                        className={cn(
+                          "p-1 rounded ml-1 transition-colors", 
+                          (animatingFeatures[selectedFeature.id]?.visible !== false) ? "text-accent bg-blue-50" : "text-text-muted hover:bg-zinc-100"
+                        )}
+                        title={animatingFeatures[selectedFeature.id]?.visible !== false ? "Ẩn biểu tượng" : "Hiện biểu tượng"}
+                      >
+                        {animatingFeatures[selectedFeature.id]?.visible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                       <button 
+                        onClick={() => toggleAnimation(selectedFeature.id)}
+                        className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                          animatingFeatures[selectedFeature.id]?.isPlaying ? "bg-red-500 text-white shadow-lg" : "bg-blue-600 text-white shadow-md hover:bg-blue-700"
+                        )}
+                       >
+                         {animatingFeatures[selectedFeature.id]?.isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="translate-x-0.5" />}
+                       </button>
+
+                       <div className="flex-1 space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[9px] text-text-muted font-bold uppercase">Tốc độ ({animatingFeatures[selectedFeature.id]?.speed || 60} km/h)</label>
+                            <Zap size={10} className="text-amber-500" />
+                          </div>
+                          <input 
+                            type="range" min="10" max="240" step="10"
+                            className="w-full h-4 accent-amber-500"
+                            value={animatingFeatures[selectedFeature.id]?.speed || 60}
+                            onChange={(e) => updateAnimationConfig(selectedFeature.id, { speed: parseInt(e.target.value) })}
+                          />
+                       </div>
+
+                       <button 
+                        onClick={() => updateAnimationConfig(selectedFeature.id, { progress: 0 })}
+                        className="w-10 h-10 rounded-lg bg-zinc-100 text-text-muted flex items-center justify-center hover:bg-zinc-200 transition-colors"
+                        title="Về điểm xuất phát"
+                       >
+                         <RotateCcw size={16} />
+                       </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -10,6 +10,24 @@
   --color-text-main: #1e293b;
   --color-text-muted: #64748b;
   --shadow-panel: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 4s ease-in-out infinite;
+  --animate-shake-3d: shake-3d 0.8s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulse-slow {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.9; }
+  }
+  @keyframes shake-3d {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
+  }
 }
 
 :root {
