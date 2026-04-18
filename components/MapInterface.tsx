@@ -636,7 +636,7 @@ export default function MapInterface() {
               m.jumpTo({
                 center: point.geometry.coordinates as [number, number],
                 bearing: finalBearing,
-                pitch: 75,
+                pitch: 45, // Lowered from 75 to 45 for "truly" low-angle perspective
                 zoom: targetZoom,
                 padding: { top: m.getContainer().clientHeight * 0.7, bottom: 0, left: 0, right: 0 }
               });
@@ -863,7 +863,7 @@ export default function MapInterface() {
       const style = m.getStyle();
       if (style && style.layers) {
         style.layers.forEach(layer => {
-          if (layer.type === 'symbol' && !layer.id.includes('vietnam-')) {
+          if (layer.type === 'symbol' && !layer.id.includes('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
             try { m.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) {}
           }
         });
@@ -881,7 +881,7 @@ export default function MapInterface() {
       const style = m.getStyle();
       if (style && style.layers) {
         style.layers.forEach(layer => {
-          if (layer.type === 'symbol' && !layer.id.includes('vietnam-')) {
+          if (layer.type === 'symbol' && !layer.id.includes('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
              try { m.setLayoutProperty(layer.id, 'visibility', 'visible'); } catch (e) {}
           }
         });
@@ -1312,6 +1312,7 @@ export default function MapInterface() {
             id: f.id,
             color: f.properties?.color || '#3bb2d0',
             width: f.properties?.width || 5,
+            distance: f.properties?.distance || '',
             active: f.id === selectedFeatureId ? 1 : 0
           }
         }));
@@ -1344,6 +1345,24 @@ export default function MapInterface() {
             'line-width': ['+', ['get', 'width'], 2],
             'line-dasharray': [1, 1],
             'line-opacity': 1
+          }
+        });
+        m.addLayer({
+          id: 'real-routes-labels',
+          type: 'symbol',
+          source: 'real-routes',
+          layout: {
+            'text-field': ['get', 'distance'],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+            'text-anchor': 'bottom',
+            'symbol-placement': 'line',
+            'text-offset': [0, -1]
+          },
+          paint: {
+            'text-color': '#000000',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
           }
         });
       } else {
@@ -1691,7 +1710,7 @@ export default function MapInterface() {
       displayControlsDefault: false,
       userProperties: true,
       controls: {
-        trash: true
+        trash: false
       },
       styles: mapboxDrawStyles as any
     });
@@ -3127,6 +3146,19 @@ export default function MapInterface() {
               <div className="p-4 border-b border-border-main flex items-center justify-between">
                 <h2 className="text-sm font-semibold truncate">Lớp dữ liệu ({drawnFeatures.length + annotations.length})</h2>
                 <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => {
+                        setAnnotations([]);
+                        if (draw.current) {
+                            draw.current.deleteAll();
+                            setDrawnFeatures([]);
+                        }
+                    }}
+                    className="text-text-muted hover:text-red-500 p-1 rounded-md transition-colors"
+                    title="Xóa tất cả"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                   <button className="text-accent hover:bg-blue-50 p-1 rounded-md transition-colors"><Plus size={18} /></button>
                   <button 
                     onClick={() => setShowDataPanel(false)}
@@ -3253,9 +3285,9 @@ export default function MapInterface() {
                             <Zap size={10} className="text-amber-500" />
                           </div>
                           <input 
-                            type="range" min="10" max="240" step="10"
+                            type="range" min="10" max="480" step="10"
                             className="w-full h-4 accent-amber-500"
-                            value={animatingFeatures[selectedFeature.id]?.speed || 60}
+                            value={animatingFeatures[selectedFeature.id]?.speed || 120}
                             onChange={(e) => updateAnimationConfig(selectedFeature.id, { speed: parseInt(e.target.value) })}
                           />
                        </div>
@@ -3407,16 +3439,6 @@ export default function MapInterface() {
                 className="flex-1 py-2 bg-accent text-white rounded-md text-xs font-semibold hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
               >
                 {isExporting ? 'Đang xuất...' : 'Xuất vùng'}
-              </button>
-              <button 
-                onClick={() => {
-                  draw.current?.deleteAll();
-                  setAnnotations([]);
-                  setDrawnFeatures([]);
-                }}
-                className="p-2 border border-border-main rounded-md text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 size={16} />
               </button>
             </div>
           </div>
