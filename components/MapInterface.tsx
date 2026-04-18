@@ -385,7 +385,7 @@ const ICON_PATHS: Record<string, string> = {
 
 const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse' | 'float' | 'shake' }> = {
   '3d-accident': { 
-    url: 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Police%20car%20light/3D/police_car_light_3d.png', 
+    url: '/2574867725.png', 
     label: 'Tai nạn GT',
     anim: 'shake'
   },
