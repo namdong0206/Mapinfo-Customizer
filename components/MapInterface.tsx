@@ -275,6 +275,24 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     label: 'MapTiler OMT',
     url: 'https://tiles.basemaps.cartocdn.com/gl/voyager-gl-style/style.json', // Placeholder vector style as MapTiler needs keys
     category: 'vector'
+  },
+  WATERCOLOR: {
+    label: 'Bản đồ Mầu nước',
+    category: 'raster',
+    url: {
+      version: 8,
+      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
+      sources: {
+        'watercolor-tiles': {
+          type: 'raster',
+          tiles: ['https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'],
+          tileSize: 256,
+          attribution: '&copy; Stadia Maps, &copy; Stamen Design, &copy; OpenStreetMap',
+          maxzoom: 16
+        }
+      },
+      layers: [{ id: 'watercolor', type: 'raster', source: 'watercolor-tiles' }]
+    }
   }
 };
 
@@ -1102,10 +1120,10 @@ export default function MapInterface() {
       const style = m.getStyle();
       if (style && style.layers) {
         style.layers.forEach(layer => {
-          // Disable all symbol layers except for our custom vietnam labels
+          // Disable all symbol layers except for our custom vietnam labels and draw layers
           if (layer.type === 'symbol') {
-              console.log('Processing symbol layer:', layer.id);
-              if (!layer.id.startsWith('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
+              if (!layer.id.startsWith('vietnam-') && !layer.id.startsWith('vehicle-') && 
+                  !layer.id.startsWith('gl-draw-') && layer.id !== 'search-marker-layer') {
                 try { m.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) {}
               }
           }
@@ -1235,8 +1253,28 @@ export default function MapInterface() {
 
       if (!markerInstances.current[ann.id]) {
         const el = document.createElement('div');
-        el.className = 'custom-marker-wrapper cursor-pointer z-[100]';
+        el.className = 'custom-marker-wrapper cursor-pointer z-[110]';
         el.innerHTML = getMarkerContent();
+        
+        // Add click listener to edit annotation
+        el.onclick = (e) => {
+          e.stopPropagation();
+          setAssetModal({
+            isOpen: true,
+            type: ann.imageUrl ? 'image' : (ann.icon ? 'icon' : 'annotate'),
+            lngLat: ann.lngLat,
+            text: ann.text || '',
+            imageUrl: ann.imageUrl || '',
+            icon: ann.icon || 'flag',
+            size: ann.size?.toString() || '120',
+            textColor: ann.textColor || '#1f2937',
+            fontSize: ann.fontSize || 14,
+            fontWeight: ann.fontWeight || '600',
+            isUploading: false,
+            editId: ann.id
+          });
+          setShowDataPanel(true);
+        };
 
         const popup = new maplibregl.Popup({ 
           offset: 35, 
@@ -1265,6 +1303,27 @@ export default function MapInterface() {
         const marker = markerInstances.current[ann.id];
         marker.setLngLat(ann.lngLat);
         const el = marker.getElement();
+        el.className = 'custom-marker-wrapper cursor-pointer z-[110]';
+        
+        // Ensure click listener is up to date with fresh 'ann' reference
+        el.onclick = (e) => {
+          e.stopPropagation();
+          setAssetModal({
+            isOpen: true,
+            type: ann.imageUrl ? 'image' : (ann.icon ? 'icon' : 'annotate'),
+            lngLat: ann.lngLat,
+            text: ann.text || '',
+            imageUrl: ann.imageUrl || '',
+            icon: ann.icon || 'flag',
+            size: ann.size?.toString() || '120',
+            textColor: ann.textColor || '#1f2937',
+            fontSize: ann.fontSize || 14,
+            fontWeight: ann.fontWeight || '600',
+            isUploading: false,
+            editId: ann.id
+          });
+          setShowDataPanel(true);
+        };
         
         const newContent = getMarkerContent();
         if (el.innerHTML !== newContent) {
@@ -2339,7 +2398,7 @@ export default function MapInterface() {
       isOpen: true,
       type: activeMode as 'annotate' | 'image' | 'icon',
       lngLat,
-      text: activeMode === 'annotate' ? 'Chú thích mới' : (activeMode === 'image' ? 'Hình ảnh' : 'Biểu tượng'),
+      text: '',
       imageUrl: '',
       icon: 'flag',
       size: '120',
@@ -2381,7 +2440,7 @@ export default function MapInterface() {
     if (assetModal.editId) {
       setAnnotations(prev => prev.map(a => a.id === assetModal.editId ? {
         ...a,
-        text: assetModal.text || 'Ghi chú',
+        text: assetModal.text,
         imageUrl: assetModal.imageUrl || undefined,
         icon: assetModal.type === 'icon' ? assetModal.icon : undefined,
         size: assetModal.type === 'image' ? parseInt(assetModal.size) : undefined,
@@ -2393,7 +2452,7 @@ export default function MapInterface() {
       const newAnnotation: Annotation = {
         id: Date.now().toString(36),
         lngLat: assetModal.lngLat,
-        text: assetModal.text || 'Ghi chú',
+        text: assetModal.text,
         imageUrl: assetModal.imageUrl || undefined,
         icon: assetModal.type === 'icon' ? assetModal.icon : undefined,
         size: assetModal.type === 'image' ? parseInt(assetModal.size) : undefined,
@@ -3067,7 +3126,7 @@ export default function MapInterface() {
 
           {/* Custom Asset Input Modal */}
           <AnimatePresence>
-            {assetModal.isOpen && (
+            {assetModal.isOpen && !assetModal.editId && (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -3168,7 +3227,7 @@ export default function MapInterface() {
                     {assetModal.type === 'icon' && (
                        <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng hiện đại 3D</label>
-                        <div className="grid grid-cols-4 gap-2 mb-4">
+                        <div className="grid grid-cols-4 gap-2">
                           {Object.entries(DISASTER_ICONS).map(([id, data]) => (
                             <button 
                               key={id}
@@ -3182,37 +3241,6 @@ export default function MapInterface() {
                                <span className="text-[8px] font-bold text-center leading-tight truncate w-full">{data.label}</span>
                             </button>
                           ))}
-                        </div>
-
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng cơ bản</label>
-                        <div className="grid grid-cols-5 gap-2">
-                          {Object.keys(ICON_PATHS).map(ic => {
-                            const IconComponent = ({ name }: { name: string }) => {
-                              if (name === 'flag') return <Flag size={20} />;
-                              if (name === 'home') return <Home size={20} />;
-                              if (name === 'school') return <School size={20} />;
-                              if (name === 'camera') return <Camera size={20} />;
-                              if (name === 'coffee') return <Coffee size={20} />;
-                              if (name === 'car') return <Car size={20} />;
-                              if (name === 'star') return <Star size={20} />;
-                              if (name === 'alert-circle') return <AlertCircle size={20} />;
-                              if (name === 'check-circle') return <CheckCircle size={20} />;
-                              if (name === 'info') return <Info size={20} />;
-                              return <MapPin size={20} />;
-                            };
-                            return (
-                              <button 
-                                key={ic}
-                                onClick={() => setAssetModal(prev => ({ ...prev, icon: ic }))}
-                                className={cn(
-                                  "p-3 rounded-lg border transition-all flex items-center justify-center",
-                                  assetModal.icon === ic ? "bg-accent text-white border-accent shadow-md" : "bg-white border-border-main text-text-muted hover:bg-zinc-50"
-                                )}
-                              >
-                                 <IconComponent name={ic} />
-                              </button>
-                            );
-                          })}
                         </div>
                       </div>
                     )}
@@ -3610,59 +3638,180 @@ export default function MapInterface() {
               </div>
             )}
             
-            {annotations.map(ann => (
-              <div 
-                key={ann.id} 
-                className="p-3 bg-bg-ui rounded-lg border border-border-main flex items-center gap-3 group/item hover:border-accent/50 cursor-pointer transition-colors"
-                onClick={() => {
-                  setAssetModal({
-                    isOpen: true,
-                    type: ann.imageUrl ? 'image' : ann.icon ? 'icon' : 'annotate',
-                    lngLat: ann.lngLat,
-                    text: ann.text || '',
-                    imageUrl: ann.imageUrl || '',
-                    icon: ann.icon || 'flag',
-                    size: (ann.size || 120).toString(),
-                    textColor: ann.textColor || '#1f2937',
-                    fontSize: ann.fontSize || 14,
-                    fontWeight: ann.fontWeight || '600',
-                    isUploading: false,
-                    editId: ann.id
-                  });
-                }}
-              >
-                <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-accent shadow-sm border border-border-main/50">
-                  <MapPin size={14} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{ann.text || (ann.imageUrl ? 'Hình ảnh' : ann.icon ? 'Biểu tượng' : 'Ghi chú')}</p>
-                  <p className="text-[10px] text-text-muted italic">Click để chỉnh sửa</p>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAnnotations(prev => prev.filter(a => a.id !== ann.id));
+            {annotations.map(ann => {
+              const isEditing = assetModal.editId === ann.id;
+              const isSomethingElseEditing = assetModal.editId ? assetModal.editId !== ann.id : selectedFeatureId !== null;
+
+              if (isSomethingElseEditing) {
+                return (
+                  <div key={ann.id} className="px-3 py-2 text-[11px] font-semibold text-text-muted border-b border-zinc-100 last:border-0 truncate bg-zinc-50/50">
+                    {ann.text || (ann.imageUrl ? 'Hình ảnh' : ann.icon ? 'Biểu tượng' : 'Ghi chú')}
+                  </div>
+                );
+              }
+
+              if (isEditing) {
+                return (
+                  <div key={ann.id} className="p-4 bg-white border border-accent/30 rounded-xl shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-border-main pb-2">
+                       <h3 className="text-[10px] font-bold uppercase tracking-widest text-accent flex items-center gap-2">
+                         <Edit2 size={12} />
+                         Chỉnh sửa đối tượng
+                       </h3>
+                       <button 
+                        onClick={() => setAssetModal(prev => ({ ...prev, editId: null, isOpen: false }))}
+                        className="p-1 hover:bg-zinc-100 rounded text-text-muted"
+                       >
+                         <X size={14} />
+                       </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-text-muted">Nội dung hiển thị</label>
+                        <input 
+                          type="text" 
+                          value={assetModal.text}
+                          onChange={(e) => setAssetModal(prev => ({ ...prev, text: e.target.value }))}
+                          className="w-full px-3 py-2 text-xs bg-zinc-50 border border-border-main rounded-lg outline-none focus:ring-1 focus:ring-accent transition-all"
+                          placeholder="Nhập ghi chú..."
+                        />
+                      </div>
+
+                      {(assetModal.type === 'image' || assetModal.type === 'annotate') && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase text-text-muted">URL Hình ảnh</label>
+                          <input 
+                            type="text" 
+                            value={assetModal.imageUrl}
+                            onChange={(e) => setAssetModal(prev => ({ ...prev, imageUrl: e.target.value }))}
+                            className="w-full px-3 py-2 text-[10px] font-mono bg-zinc-50 border border-border-main rounded-lg outline-none"
+                            placeholder="https://..."
+                          />
+                        </div>
+                      )}
+
+                      {assetModal.type === 'image' && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase text-text-muted">Kích thước (px)</label>
+                          <input 
+                            type="number" 
+                            value={assetModal.size}
+                            onChange={(e) => setAssetModal(prev => ({ ...prev, size: e.target.value }))}
+                            className="w-full px-3 py-2 text-xs bg-zinc-50 border border-border-main rounded-lg outline-none"
+                          />
+                        </div>
+                      )}
+
+                      {assetModal.type === 'icon' && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase text-text-muted">Biểu tượng 3D</label>
+                          <div className="grid grid-cols-4 gap-1">
+                             {Object.entries(DISASTER_ICONS).map(([id, data]) => (
+                               <button 
+                                key={id}
+                                onClick={() => setAssetModal(prev => ({ ...prev, icon: id, text: data.label }))}
+                                className={cn(
+                                  "p-1.5 rounded-lg border transition-all flex flex-col items-center gap-1 group",
+                                  assetModal.icon === id ? "bg-accent/10 border-accent" : "bg-white border-border-main"
+                                )}
+                               >
+                                  <img src={data.url} className="w-6 h-6 object-contain" alt={data.label} />
+                                  <span className="text-[6px] font-bold text-center leading-tight truncate w-full">{data.label}</span>
+                               </button>
+                             ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button 
+                        onClick={saveAsset}
+                        className="flex-1 py-2 bg-zinc-900 text-white text-[11px] font-bold uppercase rounded-lg shadow-md hover:bg-black transition-all active:scale-[0.98]"
+                      >Hoàn thành</button>
+                      <button 
+                        onClick={() => {
+                          setAnnotations(prev => prev.filter(a => a.id !== ann.id));
+                          setAssetModal(prev => ({ ...prev, editId: null, isOpen: false }));
+                        }}
+                        className="p-2 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Xóa đối tượng"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div 
+                  key={ann.id} 
+                  className="p-3 bg-bg-ui rounded-lg border border-border-main flex items-center gap-3 group/item hover:border-accent/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setAssetModal({
+                      isOpen: true,
+                      type: ann.imageUrl ? 'image' : ann.icon ? 'icon' : 'annotate',
+                      lngLat: ann.lngLat,
+                      text: ann.text || '',
+                      imageUrl: ann.imageUrl || '',
+                      icon: ann.icon || 'flag',
+                      size: (ann.size || 120).toString(),
+                      textColor: ann.textColor || '#1f2937',
+                      fontSize: ann.fontSize || 14,
+                      fontWeight: ann.fontWeight || '600',
+                      isUploading: false,
+                      editId: ann.id
+                    });
+                    if (map.current) {
+                      map.current.flyTo({ center: ann.lngLat, zoom: 15, duration: 1000 });
+                    }
                   }}
-                  className="text-text-muted hover:text-red-500 p-1 rounded-md transition-colors"
                 >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+                  <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-accent shadow-sm border border-border-main/50">
+                    {ann.imageUrl ? <Download size={14} className="rotate-180" /> : ann.icon ? <MapPin size={14} /> : <Info size={14} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{ann.text || (ann.imageUrl ? 'Hình ảnh' : ann.icon ? 'Biểu tượng' : 'Ghi chú')}</p>
+                    <p className="text-[9px] text-text-muted uppercase tracking-wider font-bold">Lớp nội dung</p>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAnnotations(prev => prev.filter(a => a.id !== ann.id));
+                    }}
+                    className="opacity-0 group-hover/item:opacity-100 text-text-muted hover:text-red-500 p-1 rounded-md transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
 
             {drawnFeatures.map(feat => {
               const isPolygon = feat.geometry?.type === 'Polygon';
               const isLine = feat.geometry?.type === 'LineString';
               const isRoute = feat.properties?.isRoute;
               const title = isPolygon ? 'Vùng dữ liệu' : isRoute ? 'Tuyến đường thực tế' : isLine ? 'Tuyến đường thẳng' : 'Lớp dữ liệu';
-              const subtitle = feat.properties?.distance ? `Khoảng cách: ${feat.properties.distance}` : (isPolygon ? 'Polygon' : 'Feature');
+              
+              const isEditing = selectedFeatureId === feat.id;
+              const isSomethingElseEditing = assetModal.editId || (selectedFeatureId && selectedFeatureId !== feat.id);
+
+              if (isSomethingElseEditing) {
+                return (
+                  <div key={feat.id} className="px-3 py-2 text-[11px] font-semibold text-text-muted border-b border-zinc-100 last:border-0 truncate bg-zinc-50/50">
+                    {title}
+                  </div>
+                );
+              }
               
               return (
                 <div 
                   key={feat.id} 
                   className={cn(
-                    "p-3 rounded-lg border flex items-center gap-3 group/item cursor-pointer transition-colors",
-                    selectedFeatureId === feat.id ? "bg-blue-50 border-accent/50" : "bg-bg-ui border-border-main hover:border-accent/30"
+                    "p-3 rounded-lg border flex flex-col gap-3 group/item cursor-pointer transition-all",
+                    isEditing ? "bg-white border-accent shadow-sm ring-1 ring-accent/10" : "bg-bg-ui border-border-main hover:border-accent/30"
                   )}
                   onClick={() => {
                     setSelectedFeatureId(feat.id);
@@ -3684,26 +3833,80 @@ export default function MapInterface() {
                     }
                   }}
                 >
-                  <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-accent shadow-sm border border-border-main/50">
-                    {isPolygon ? <Square size={14} /> : <Route size={14} />}
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-accent shadow-sm border border-border-main/50">
+                      {isPolygon ? <Square size={14} /> : <Route size={14} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate">{title}</p>
+                      <p className="text-[9px] text-text-muted uppercase tracking-widest leading-none">
+                        {feat.properties?.distance ? `Khoảng cách: ${feat.properties.distance}` : (isPolygon ? 'Diện tích vùng' : 'Phân lớp dữ liệu')}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (draw.current) {
+                          draw.current.delete(feat.id);
+                          setDrawnFeatures(draw.current.getAll().features);
+                          if (selectedFeatureId === feat.id) setSelectedFeatureId(null);
+                        }
+                      }}
+                      className={cn(
+                        "text-text-muted hover:text-red-500 p-1 rounded-md transition-colors",
+                        isEditing ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
+                      )}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">{title}</p>
-                    <p className="text-[10px] text-text-muted italic">Click để chỉnh sửa</p>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (draw.current) {
-                        draw.current.delete(feat.id);
-                        setDrawnFeatures(draw.current.getAll().features);
-                        if (selectedFeatureId === feat.id) setSelectedFeatureId(null);
-                      }
-                    }}
-                    className="text-text-muted hover:text-red-500 p-1 rounded-md transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+
+                  {isEditing && (isLine || isRoute) && feat.properties?.isAnimating && (
+                    <div className="pt-3 border-t border-zinc-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                      {/* Animation Controls */}
+                      <div className="flex items-center gap-2">
+                         <button 
+                          onClick={(e) => {
+                             e.stopPropagation();
+                             setIsAnimationPaused(!isAnimationPaused);
+                          }}
+                          className="w-10 h-10 rounded-lg bg-zinc-900 text-white flex items-center justify-center hover:bg-black transition-all shadow-sm"
+                         >
+                           {isAnimationPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+                         </button>
+                         
+                         <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold uppercase text-text-muted">Tốc độ xử lý</span>
+                              <span className="text-[9px] font-bold text-accent">{animatingFeatures[feat.id]?.speed || 120} km/h</span>
+                            </div>
+                            <input 
+                              type="range" min="10" max="480" step="10"
+                              className="w-full h-4 accent-zinc-900"
+                              value={animatingFeatures[feat.id]?.speed || 120}
+                              onChange={(e) => updateAnimationConfig(feat.id, { speed: parseInt(e.target.value) })}
+                            />
+                         </div>
+
+                         <button 
+                          onClick={(e) => { e.stopPropagation(); updateAnimationConfig(feat.id, { progress: 0 }); }}
+                          className="w-10 h-10 rounded-lg bg-zinc-50 text-text-muted flex items-center justify-center hover:bg-zinc-100 border border-border-main transition-colors"
+                         >
+                           <RotateCcw size={16} />
+                         </button>
+
+                         <button 
+                          onClick={(e) => { e.stopPropagation(); updateAnimationConfig(feat.id, { isFpv: !animatingFeatures[feat.id]?.isFpv }); }}
+                          className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center transition-all",
+                            animatingFeatures[feat.id]?.isFpv ? "bg-amber-500 text-white shadow-md" : "bg-zinc-50 text-text-muted hover:bg-zinc-100 border border-border-main"
+                          )}
+                         >
+                           <Video size={16} />
+                         </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
