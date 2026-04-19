@@ -772,25 +772,25 @@ export default function MapInterface() {
             'fill-color': [
               'match',
               ['get', 'ten_tinh'],
-              ...Object.entries(adminUnitColors.provinces).length > 0 
+              ...(Object.entries(adminUnitColors.provinces).length > 0 
                 ? Object.entries(adminUnitColors.provinces).flat() 
-                : ['__placeholder__', '#0ea5e9'],
+                : ['__placeholder__', '#0ea5e9']),
               '#0ea5e9'
-            ],
+            ] as any,
             'fill-opacity': [
               'case',
               ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
               Object.entries(adminUnitOpacities.provinces).length > 0
-                ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45]
+                ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45] as any)
                 : 0.45,
               ['match', ['get', 'ten_tinh'], 
                 Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
                 Object.entries(adminUnitOpacities.provinces).length > 0
-                  ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25]
+                  ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25] as any)
                   : 0.25,
                 0.05
               ]
-            ]
+            ] as any
           }
         });
         
@@ -827,25 +827,25 @@ export default function MapInterface() {
         m.setPaintProperty(fillLayerId, 'fill-color', [
           'match',
           ['get', 'ten_tinh'],
-          ...Object.entries(adminUnitColors.provinces).length > 0 
+          ...(Object.entries(adminUnitColors.provinces).length > 0 
             ? Object.entries(adminUnitColors.provinces).flat() 
-            : ['__placeholder__', '#0ea5e9'],
+            : ['__placeholder__', '#0ea5e9']),
           '#0ea5e9'
-        ]);
+        ] as any);
         m.setPaintProperty(fillLayerId, 'fill-opacity', [
           'case',
           ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
           Object.entries(adminUnitOpacities.provinces).length > 0
-            ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45]
+            ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45] as any)
             : 0.45,
           ['match', ['get', 'ten_tinh'], 
             Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
             Object.entries(adminUnitOpacities.provinces).length > 0
-              ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25]
+              ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25] as any)
               : 0.25,
             0.05
           ]
-        ]);
+        ] as any);
       }
       
       if (!m.getLayer(lineLayerId)) {
@@ -866,8 +866,8 @@ export default function MapInterface() {
                 Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
                 1.5,
                 1.0
-              ]
-            ]
+              ] as any
+            ] as any
           }
         });
       } else {
@@ -885,8 +885,8 @@ export default function MapInterface() {
               Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
               1.5,
               1.0
-            ]
-          ]);
+            ] as any
+          ] as any);
       }
 
       if (!m.getSource('vietnam-point-source')) {
@@ -917,25 +917,25 @@ export default function MapInterface() {
              'fill-color': [
                'match',
                ['get', 'ten_xa'],
-               ...Object.entries(adminUnitColors.communes).length > 0 
+               ...(Object.entries(adminUnitColors.communes).length > 0 
                  ? Object.entries(adminUnitColors.communes).flat() 
-                 : ['__placeholder__', '#cbd5e1'],
+                 : ['__placeholder__', '#cbd5e1']),
                '#cbd5e1'
-             ],
+             ] as any,
              'fill-opacity': [
                'case',
                ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
                Object.entries(adminUnitOpacities.communes).length > 0
-                 ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45]
+                 ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45] as any)
                  : 0.45,
                ['match', ['get', 'ten_xa'], 
                  Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
                  Object.entries(adminUnitOpacities.communes).length > 0
-                   ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25]
+                   ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25] as any)
                    : 0.25,
                  0.05
                ]
-             ]
+             ] as any
            }
          });
          
@@ -971,25 +971,25 @@ export default function MapInterface() {
          m.setPaintProperty('vietnam-commune-fill', 'fill-color', [
            'match',
            ['get', 'ten_xa'],
-           ...Object.entries(adminUnitColors.communes).length > 0 
+           ...(Object.entries(adminUnitColors.communes).length > 0 
              ? Object.entries(adminUnitColors.communes).flat() 
-             : ['__placeholder__', '#cbd5e1'],
+             : ['__placeholder__', '#cbd5e1']),
            '#cbd5e1'
-         ]);
+         ] as any);
          m.setPaintProperty('vietnam-commune-fill', 'fill-opacity', [
            'case',
            ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
            Object.entries(adminUnitOpacities.communes).length > 0
-             ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45]
+             ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45] as any)
              : 0.45,
            ['match', ['get', 'ten_xa'], 
              Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
              Object.entries(adminUnitOpacities.communes).length > 0
-               ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25]
+               ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25] as any)
                : 0.25,
              0.05
            ]
-         ]);
+         ] as any);
       }
       if (!m.getLayer('vietnam-commune-line')) {
          m.addLayer({
@@ -1029,8 +1029,8 @@ export default function MapInterface() {
              Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
              1.2,
              0.5
-           ]
-         ]);
+           ] as any
+         ] as any);
       }
       if (!m.getLayer('vietnam-commune-label')) {
          m.addLayer({
