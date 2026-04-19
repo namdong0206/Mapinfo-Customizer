@@ -92,7 +92,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
-          attribution: '&copy; OpenStreetMap'
+          attribution: '&copy; OpenStreetMap',
+          maxzoom: 19
         }
       },
       layers: [{ id: 'osm', type: 'raster', source: 'osm-tiles' }]
@@ -109,7 +110,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png'],
           tileSize: 256,
-          attribution: '&copy; Memomaps'
+          attribution: '&copy; Memomaps',
+          maxzoom: 18
         }
       },
       layers: [{ id: 'pt', type: 'raster', source: 'pt-tiles' }]
@@ -126,12 +128,14 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         },
         'labels': {
           type: 'raster',
           tiles: ['https://tiles.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png'],
-          tileSize: 256
+          tileSize: 256,
+          maxzoom: 19
         }
       },
       layers: [
@@ -151,7 +155,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         }
       },
       layers: [{ id: 'satellite', type: 'raster', source: 'satellite-tiles' }]
@@ -168,12 +173,14 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         },
         'arcgis-labels': {
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
-          tileSize: 256
+          tileSize: 256,
+          maxzoom: 17
         }
       },
       layers: [
@@ -193,7 +200,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         }
       },
       layers: [{ id: 'arcgis-terrain', type: 'raster', source: 'arcgis-terrain' }]
@@ -215,7 +223,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         }
       },
       layers: [{ id: 'topo-shaded', type: 'raster', source: 'topo-shaded-tiles' }]
@@ -232,7 +241,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri'
+          attribution: 'Tiles &copy; Esri',
+          maxzoom: 17
         }
       },
       layers: [{ id: 'topo-phys', type: 'raster', source: 'topo-phys-tiles' }]
@@ -249,7 +259,8 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
           type: 'raster',
           tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
-          attribution: '&copy; OpenTopoMap'
+          attribution: '&copy; OpenTopoMap',
+          maxzoom: 17
         }
       },
       layers: [{ id: 'otm', type: 'raster', source: 'otm-tiles' }]
@@ -635,8 +646,8 @@ export default function MapInterface() {
             });
             
             if (config.isFpv && config.isPlaying) {
-              const isSatellite = mapStyleRef.current === 'SATELLITE' || mapStyleRef.current === 'HYBRID';
-              const targetZoom = isSatellite ? Math.min(Math.max(m.getZoom(), 14), 16) : Math.max(m.getZoom(), 17);
+              const isSatellite = mapStyleRef.current === 'SATELLITE' || mapStyleRef.current === 'HYBRID' || mapStyleRef.current === 'ARCGIS_HYBRID';
+              const targetZoom = isSatellite ? Math.max(m.getZoom(), 14) : Math.max(m.getZoom(), 17);
               
               // Move movement center to the bottom of the screen
               m.jumpTo({
@@ -1726,6 +1737,7 @@ export default function MapInterface() {
       maxPitch: 85,
       interactive: true,
       keyboard: true,
+      maxZoom: 22,
       // @ts-ignore
       preserveDrawingBuffer: true,
     });
@@ -2607,12 +2619,6 @@ export default function MapInterface() {
                            const currentPitch = map.current.getPitch();
                            const currentBearing = map.current.getBearing();
                            
-                           let targetZoom = currentZoom;
-                           const isSatellite = key === 'SATELLITE' || key === 'HYBRID' || key === 'ARCGIS_HYBRID';
-                           if (isSatellite && targetZoom > 16) {
-                             targetZoom = 16;
-                           }
-                           
                            setMapStyleKey(key);
                            map.current.setStyle(style.url);
                            
@@ -2620,7 +2626,7 @@ export default function MapInterface() {
                            map.current.once('style.load', () => {
                              map.current?.jumpTo({
                                 center: currentCenter,
-                                zoom: targetZoom,
+                                zoom: currentZoom,
                                 pitch: currentPitch,
                                 bearing: currentBearing
                               });
