@@ -115,40 +115,6 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
       layers: [{ id: 'pt', type: 'raster', source: 'pt-tiles' }]
     }
   },
-  HUMANITARIAN: {
-    label: 'Bản đồ Nhân đạo',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'hot-tiles': {
-          type: 'raster',
-          tiles: ['https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; Humanitarian OSM'
-        }
-      },
-      layers: [{ id: 'hot', type: 'raster', source: 'hot-tiles' }]
-    }
-  },
-  CYCLOSM: {
-    label: 'OpenTopoMap',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'cycl-tiles': {
-          type: 'raster',
-          tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; OpenTopoMap'
-        }
-      },
-      layers: [{ id: 'cycl', type: 'raster', source: 'cycl-tiles' }]
-    }
-  },
   HYBRID: {
     label: 'Vệ tinh Nhãn',
     category: 'raster',
@@ -196,55 +162,55 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     url: 'https://tiles.basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
     category: 'vector'
   },
-  TOPO: {
-    label: 'Địa hình',
+  TOPO_SHADED: {
+    label: 'Địa hình (Khối)',
     category: 'raster',
     url: {
       version: 8,
       glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
       sources: {
-        'topo-tiles': {
+        'topo-shaded-tiles': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Tiles &copy; Esri'
+        }
+      },
+      layers: [{ id: 'topo-shaded', type: 'raster', source: 'topo-shaded-tiles' }]
+    }
+  },
+  TOPO_PHYSICAL: {
+    label: 'Địa hình (Vật lý)',
+    category: 'raster',
+    url: {
+      version: 8,
+      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
+      sources: {
+        'topo-phys-tiles': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Tiles &copy; Esri'
+        }
+      },
+      layers: [{ id: 'topo-phys', type: 'raster', source: 'topo-phys-tiles' }]
+    }
+  },
+  OPENTOPOMAP: {
+    label: 'OpenTopoMap (Gốc)',
+    category: 'raster',
+    url: {
+      version: 8,
+      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
+      sources: {
+        'otm-tiles': {
           type: 'raster',
           tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
           attribution: '&copy; OpenTopoMap'
         }
       },
-      layers: [{ id: 'osm-topo', type: 'raster', source: 'topo-tiles' }]
-    }
-  },
-  TRACESTRACK: {
-    label: 'Tracestrack Topo',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'trace-tiles': {
-          type: 'raster',
-          tiles: ['https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; Tracestrack'
-        }
-      },
-      layers: [{ id: 'trace', type: 'raster', source: 'trace-tiles' }]
-    }
-  },
-  WATERCOLOR: {
-    label: 'Bản đồ Màu nước',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'water-tiles': {
-          type: 'raster',
-          tiles: ['https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'],
-          tileSize: 256,
-          attribution: '&copy; Stamen'
-        }
-      },
-      layers: [{ id: 'water', type: 'raster', source: 'water-tiles' }]
+      layers: [{ id: 'otm', type: 'raster', source: 'otm-tiles' }]
     }
   },
   SHORTBREAD: {
@@ -256,23 +222,6 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     label: 'MapTiler OMT',
     url: 'https://tiles.basemaps.cartocdn.com/gl/voyager-gl-style/style.json', // Placeholder vector style as MapTiler needs keys
     category: 'vector'
-  },
-  STAMEN_TONER: {
-    label: 'Đơn sắc',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'stamen-toner-tiles': {
-          type: 'raster',
-          tiles: ['https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; Stamen Design'
-        }
-      },
-      layers: [{ id: 'stamen-toner', type: 'raster', source: 'stamen-toner-tiles' }]
-    }
   }
 };
 
@@ -479,6 +428,21 @@ export default function MapInterface() {
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
+  const [showDataPanel, setShowDataPanel] = useState(true);
+  const [adminUnitColors, setAdminUnitColors] = useState<{
+    provinces: Record<string, string>;
+    communes: Record<string, string>;
+  }>({ provinces: {}, communes: {} });
+  const [adminUnitOpacities, setAdminUnitOpacities] = useState<{
+    provinces: Record<string, number>;
+    communes: Record<string, number>;
+  }>({ provinces: {}, communes: {} });
+  const [selectedAdminUnits, setSelectedAdminUnits] = useState<{
+    id: string;
+    name: string;
+    level: 'province' | 'commune';
+    properties: any;
+  }[]>([]);
   
   // Animation State
   const [animatingFeatures, setAnimatingFeatures] = useState<Record<string, {
@@ -804,14 +768,125 @@ export default function MapInterface() {
       if (!m.getLayer(fillLayerId)) {
         m.addLayer({
           id: fillLayerId, type: 'fill', source: sourceId,
-          paint: { 'fill-color': '#0ea5e9', 'fill-opacity': 0.05 }
+          paint: { 
+            'fill-color': [
+              'match',
+              ['get', 'ten_tinh'],
+              ...Object.entries(adminUnitColors.provinces).length > 0 
+                ? Object.entries(adminUnitColors.provinces).flat() 
+                : ['__placeholder__', '#0ea5e9'],
+              '#0ea5e9'
+            ],
+            'fill-opacity': [
+              'case',
+              ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+              Object.entries(adminUnitOpacities.provinces).length > 0
+                ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45]
+                : 0.45,
+              ['match', ['get', 'ten_tinh'], 
+                Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
+                Object.entries(adminUnitOpacities.provinces).length > 0
+                  ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25]
+                  : 0.25,
+                0.05
+              ]
+            ]
+          }
         });
+        
+        m.on('mouseenter', fillLayerId, () => { m.getCanvas().style.cursor = 'pointer'; });
+        m.on('mouseleave', fillLayerId, () => { m.getCanvas().style.cursor = ''; });
+        m.on('click', fillLayerId, (e) => {
+          if (e.features && e.features.length > 0) {
+            const feat = e.features[0];
+            const originalEvent = e.originalEvent as MouseEvent;
+            const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+
+            setSelectedAdminUnits(prev => {
+              const unit = {
+                id: feat.properties.ten_tinh,
+                name: feat.properties.ten_tinh,
+                level: 'province' as const,
+                properties: feat.properties
+              };
+              
+              if (isMultiSelect) {
+                const exists = prev.find(u => u.id === unit.id && u.level === 'province');
+                if (exists) {
+                  return prev.filter(u => u.id !== unit.id || u.level !== 'province');
+                }
+                return [...prev, unit];
+              }
+              return [unit];
+            });
+            setShowDataPanel(true);
+          }
+        });
+      } else {
+        // Update existing layer paint property
+        m.setPaintProperty(fillLayerId, 'fill-color', [
+          'match',
+          ['get', 'ten_tinh'],
+          ...Object.entries(adminUnitColors.provinces).length > 0 
+            ? Object.entries(adminUnitColors.provinces).flat() 
+            : ['__placeholder__', '#0ea5e9'],
+          '#0ea5e9'
+        ]);
+        m.setPaintProperty(fillLayerId, 'fill-opacity', [
+          'case',
+          ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+          Object.entries(adminUnitOpacities.provinces).length > 0
+            ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.45]
+            : 0.45,
+          ['match', ['get', 'ten_tinh'], 
+            Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
+            Object.entries(adminUnitOpacities.provinces).length > 0
+              ? ['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25]
+              : 0.25,
+            0.05
+          ]
+        ]);
       }
+      
       if (!m.getLayer(lineLayerId)) {
         m.addLayer({
           id: lineLayerId, type: 'line', source: sourceId,
-          paint: { 'line-color': '#0284c7', 'line-width': 1.5 }
+          paint: { 
+            'line-color': [
+               'case',
+               ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+               '#fbbf24',
+               '#0284c7'
+            ], 
+            'line-width': [
+              'case',
+              ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+              3,
+              ['match', ['get', 'ten_tinh'], 
+                Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
+                1.5,
+                1.0
+              ]
+            ]
+          }
         });
+      } else {
+          m.setPaintProperty(lineLayerId, 'line-color', [
+            'case',
+            ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+            '#fbbf24',
+            '#0284c7'
+          ]);
+          m.setPaintProperty(lineLayerId, 'line-width', [
+            'case',
+            ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+            3,
+            ['match', ['get', 'ten_tinh'], 
+              Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
+              1.5,
+              1.0
+            ]
+          ]);
       }
 
       if (!m.getSource('vietnam-point-source')) {
@@ -837,14 +912,125 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-commune-fill')) {
          m.addLayer({
            id: 'vietnam-commune-fill', type: 'fill', source: communeSourceId,
-           minzoom: 9, paint: { 'fill-color': '#cbd5e1', 'fill-opacity': 0.05 }
+           minzoom: 9, 
+           paint: { 
+             'fill-color': [
+               'match',
+               ['get', 'ten_xa'],
+               ...Object.entries(adminUnitColors.communes).length > 0 
+                 ? Object.entries(adminUnitColors.communes).flat() 
+                 : ['__placeholder__', '#cbd5e1'],
+               '#cbd5e1'
+             ],
+             'fill-opacity': [
+               'case',
+               ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+               Object.entries(adminUnitOpacities.communes).length > 0
+                 ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45]
+                 : 0.45,
+               ['match', ['get', 'ten_xa'], 
+                 Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
+                 Object.entries(adminUnitOpacities.communes).length > 0
+                   ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25]
+                   : 0.25,
+                 0.05
+               ]
+             ]
+           }
          });
+         
+         m.on('mouseenter', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = 'pointer'; });
+         m.on('mouseleave', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = ''; });
+         m.on('click', 'vietnam-commune-fill', (e) => {
+           if (e.features && e.features.length > 0) {
+             const feat = e.features[0];
+             const originalEvent = e.originalEvent as MouseEvent;
+             const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+
+             setSelectedAdminUnits(prev => {
+               const unit = {
+                 id: feat.properties.ten_xa,
+                 name: feat.properties.ten_xa,
+                 level: 'commune' as const,
+                 properties: feat.properties
+               };
+               
+               if (isMultiSelect) {
+                 const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
+                 if (exists) {
+                   return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
+                 }
+                 return [...prev, unit];
+               }
+               return [unit];
+             });
+             setShowDataPanel(true);
+           }
+         });
+      } else {
+         m.setPaintProperty('vietnam-commune-fill', 'fill-color', [
+           'match',
+           ['get', 'ten_xa'],
+           ...Object.entries(adminUnitColors.communes).length > 0 
+             ? Object.entries(adminUnitColors.communes).flat() 
+             : ['__placeholder__', '#cbd5e1'],
+           '#cbd5e1'
+         ]);
+         m.setPaintProperty('vietnam-commune-fill', 'fill-opacity', [
+           'case',
+           ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+           Object.entries(adminUnitOpacities.communes).length > 0
+             ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.45]
+             : 0.45,
+           ['match', ['get', 'ten_xa'], 
+             Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
+             Object.entries(adminUnitOpacities.communes).length > 0
+               ? ['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25]
+               : 0.25,
+             0.05
+           ]
+         ]);
       }
       if (!m.getLayer('vietnam-commune-line')) {
          m.addLayer({
            id: 'vietnam-commune-line', type: 'line', source: communeSourceId,
-           minzoom: 9, paint: { 'line-color': '#64748b', 'line-width': 0.5 }
+           minzoom: 9, 
+           paint: { 
+             'line-color': [
+               'case',
+               ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+               '#fbbf24',
+               '#64748b'
+             ], 
+             'line-width': [
+               'case',
+               ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+               2.5,
+               ['match', ['get', 'ten_xa'], 
+                 Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
+                 1.2,
+                 0.5
+               ]
+             ]
+           }
          });
+      } else {
+         m.setPaintProperty('vietnam-commune-line', 'line-color', [
+           'case',
+           ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+           '#fbbf24',
+           '#64748b'
+         ]);
+         m.setPaintProperty('vietnam-commune-line', 'line-width', [
+           'case',
+           ['in', ['get', 'ten_xa'], ['literal', selectedAdminUnits.filter(u => u.level === 'commune').map(u => u.id)]],
+           2.5,
+           ['match', ['get', 'ten_xa'], 
+             Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
+             1.2,
+             0.5
+           ]
+         ]);
       }
       if (!m.getLayer('vietnam-commune-label')) {
          m.addLayer({
@@ -863,8 +1049,12 @@ export default function MapInterface() {
       const style = m.getStyle();
       if (style && style.layers) {
         style.layers.forEach(layer => {
-          if (layer.type === 'symbol' && !layer.id.includes('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
-            try { m.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) {}
+          // Disable all symbol layers except for our custom vietnam labels
+          if (layer.type === 'symbol') {
+              console.log('Processing symbol layer:', layer.id);
+              if (!layer.id.startsWith('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
+                try { m.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) {}
+              }
           }
         });
       }
@@ -890,12 +1080,12 @@ export default function MapInterface() {
 
     // Always re-apply 3D if active
     updateBuildings3D(m, is3DRef.current);
-  }, [updateBuildings3D]);
+  }, [updateBuildings3D, adminUnitColors, adminUnitOpacities, selectedAdminUnits, showAdminBoundaries]);
 
   useEffect(() => {
     if (!map.current) return;
     setupCustomLayers();
-  }, [showAdminBoundaries, is3D, setupCustomLayers]);
+  }, [showAdminBoundaries, is3D, setupCustomLayers, adminUnitColors, adminUnitOpacities, selectedAdminUnits]);
 
   useEffect(() => {
     if (!map.current) return;
@@ -1040,7 +1230,6 @@ export default function MapInterface() {
   const layerPickerRef = useRef<HTMLDivElement>(null);
   const layerButtonRef = useRef<HTMLButtonElement>(null);
 
-  const [showDataPanel, setShowDataPanel] = useState(true);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchTargetId, setSearchTargetId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1929,94 +2118,7 @@ export default function MapInterface() {
 
       // Re-add admin boundaries if active
       if (adminBoundaryRef.current) {
-        const sourceId = 'vietnam-admin-source';
-        if (!m.getSource(sourceId)) {
-          m.addSource(sourceId, {
-            type: 'geojson',
-            data: '/data/vn-provinces-34.json'
-          });
-          m.addLayer({
-            id: 'vietnam-admin-fill',
-            type: 'fill',
-            source: sourceId,
-            paint: { 'fill-color': '#0ea5e9', 'fill-opacity': 0.05 }
-          });
-          m.addLayer({
-            id: 'vietnam-admin-line',
-            type: 'line',
-            source: sourceId,
-            paint: { 'line-color': '#0284c7', 'line-width': 1.5, 'line-dasharray': [2, 2] }
-          });
-          m.addLayer({
-            id: 'vietnam-admin-label',
-            type: 'symbol',
-            source: sourceId,
-            minzoom: 4,
-            maxzoom: 11,
-            layout: {
-              'text-field': ['get', 'ten_tinh'],
-              'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-              'text-size': 12,
-              'text-anchor': 'center',
-              'symbol-placement': 'line-center',
-              'text-allow-overlap': false,
-              'text-ignore-placement': false
-            },
-            paint: {
-              'text-color': '#0369a1',
-              'text-halo-color': '#ffffff',
-              'text-halo-width': 2
-            }
-          });
-        }
-
-        // Add communes
-        const communeSourceId = 'vietnam-commune-source';
-        if (!m.getSource(communeSourceId)) {
-          m.addSource(communeSourceId, {
-            type: 'geojson',
-            data: '/data/vn-communes-34.json'
-          });
-        }
-        if (!m.getLayer('vietnam-commune-fill')) {
-          m.addLayer({
-            id: 'vietnam-commune-fill',
-            type: 'fill',
-            source: communeSourceId,
-            minzoom: 9,
-            paint: { 'fill-color': '#f8fafc', 'fill-opacity': 0.05 }
-          });
-        }
-        if (!m.getLayer('vietnam-commune-line')) {
-          m.addLayer({
-            id: 'vietnam-commune-line',
-            type: 'line',
-            source: communeSourceId,
-            minzoom: 9,
-            paint: { 'line-color': '#94a3b8', 'line-width': 0.5, 'line-dasharray': [1, 1] }
-          });
-        }
-        if (!m.getLayer('vietnam-commune-label')) {
-          m.addLayer({
-            id: 'vietnam-commune-label',
-            type: 'symbol',
-            source: communeSourceId,
-            minzoom: 11,
-            layout: {
-              'text-field': ['get', 'ten_xa'],
-              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-              'text-size': 10,
-              'text-anchor': 'center',
-              'symbol-placement': 'point',
-              'text-allow-overlap': false
-            },
-            paint: {
-              'text-color': '#64748b',
-              'text-halo-color': '#ffffff',
-              'text-halo-width': 1
-            }
-          });
-        }
+        // Handled by setupCustomLayers() called at line 1657
       }
     });
 
@@ -3171,6 +3273,142 @@ export default function MapInterface() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {selectedAdminUnits.length > 0 && (
+              <div className="p-3 bg-zinc-900 text-white rounded-lg border border-zinc-800 space-y-3 mb-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold uppercase text-accent">Đơn vị hành chính</h3>
+                  <button onClick={() => setSelectedAdminUnits([])} className="text-zinc-400 hover:text-white transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+                
+                <div className="space-y-1">
+                  {selectedAdminUnits.length === 1 ? (
+                    <>
+                      <p className="text-xs font-bold truncate">{selectedAdminUnits[0].name}</p>
+                      <p className="text-[9px] text-zinc-400 uppercase tracking-widest">{selectedAdminUnits[0].level === 'province' ? 'Tỉnh / Thành phố' : 'Xã / Phường / Thị trấn'}</p>
+                    </>
+                  ) : (
+                    <p className="text-xs font-bold truncate">Đã chọn {selectedAdminUnits.length} địa phương</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-zinc-800">
+                  <label className="text-[10px] text-zinc-400 uppercase font-bold">Chọn màu sắc tô vùng</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      '#ef4444', '#f97316', '#f59e0b', '#facc15', '#84cc16', 
+                      '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', 
+                      '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899'
+                    ].map(color => (
+                      <button 
+                        key={color}
+                        onClick={() => {
+                          setAdminUnitColors(prev => {
+                            const nextProvinces = { ...prev.provinces };
+                            const nextCommunes = { ...prev.communes };
+                            selectedAdminUnits.forEach(unit => {
+                              if (unit.level === 'province') nextProvinces[unit.id] = color;
+                              else nextCommunes[unit.id] = color;
+                            });
+                            return { provinces: nextProvinces, communes: nextCommunes };
+                          });
+                        }}
+                        className={cn(
+                          "w-full aspect-square rounded-md border-2 transition-all hover:scale-110",
+                          selectedAdminUnits.length === 1 && (selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) === color
+                            ? "border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                            : "border-transparent"
+                        )}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <input 
+                      type="color" 
+                      className="w-full h-8 rounded cursor-pointer bg-zinc-800 border-none p-0.5"
+                      value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) || '#0ea5e9') : '#0ea5e9'}
+                      onChange={(e) => {
+                         const color = e.target.value;
+                         setAdminUnitColors(prev => {
+                            const nextProvinces = { ...prev.provinces };
+                            const nextCommunes = { ...prev.communes };
+                            selectedAdminUnits.forEach(unit => {
+                              if (unit.level === 'province') nextProvinces[unit.id] = color;
+                              else nextCommunes[unit.id] = color;
+                            });
+                            return { provinces: nextProvinces, communes: nextCommunes };
+                          });
+                      }}
+                    />
+                    <button 
+                      onClick={() => {
+                        setAdminUnitColors(prev => {
+                          const nextProvinces = { ...prev.provinces };
+                          const nextCommunes = { ...prev.communes };
+                          selectedAdminUnits.forEach(unit => {
+                            if (unit.level === 'province') delete nextProvinces[unit.id];
+                            else delete nextCommunes[unit.id];
+                          });
+                          return { provinces: nextProvinces, communes: nextCommunes };
+                        });
+                      }}
+                      className="px-2 bg-zinc-800 text-zinc-400 hover:text-white rounded transition-colors"
+                      title="Xóa màu"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-zinc-800">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] text-zinc-400 uppercase font-bold">Độ trong suốt (Opacity)</label>
+                    <span className="text-[10px] text-accent font-bold">
+                      {selectedAdminUnits.length === 1 
+                        ? Math.round(((selectedAdminUnits[0].level === 'province' ? adminUnitOpacities.provinces[selectedAdminUnits[0].id] : adminUnitOpacities.communes[selectedAdminUnits[0].id]) ?? 0.25) * 100) 
+                        : 'Vùng đè'}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-accent"
+                    value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitOpacities.provinces[selectedAdminUnits[0].id] : adminUnitOpacities.communes[selectedAdminUnits[0].id]) ?? 0.25) : 0.25}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setAdminUnitOpacities(prev => {
+                        const nextProvinces = { ...prev.provinces };
+                        const nextCommunes = { ...prev.communes };
+                        selectedAdminUnits.forEach(unit => {
+                          if (unit.level === 'province') nextProvinces[unit.id] = val;
+                          else nextCommunes[unit.id] = val;
+                        });
+                        return { provinces: nextProvinces, communes: nextCommunes };
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                   <button 
+                     onClick={() => setSelectedAdminUnits([])}
+                     className="flex-1 py-2 bg-zinc-800 text-zinc-400 text-[10px] font-bold rounded-lg hover:bg-zinc-700 hover:text-white transition-all active:scale-95"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={() => setSelectedAdminUnits([])}
+                     className="flex-1 py-2 bg-accent text-white text-[10px] font-bold rounded-lg hover:bg-blue-600 transition-all shadow-md active:scale-95"
+                   >
+                     OK
+                   </button>
+                </div>
+              </div>
+            )}
             {selectedFeature && (
               <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 space-y-3 mb-4">
                 <div className="flex items-center justify-between">
