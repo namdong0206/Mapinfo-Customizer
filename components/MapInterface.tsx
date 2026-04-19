@@ -6,7 +6,7 @@ import maplibregl from 'maplibre-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import MapLibreGeocoder from '@maplibre/maplibre-gl-geocoder';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { 
   Map as MapIcon, 
   Square, 
@@ -2178,24 +2178,25 @@ export default function MapInterface() {
     setIsExporting(true);
     try {
       if (map.current) {
-        // Force the map to repaint just before capture so drawing buffer is fresh
+        // Force a repaint just before capture
         map.current.triggerRepaint();
         await new Promise(resolve => map.current?.once('render', resolve));
       }
 
-      const canvas = await html2canvas(mapContainer.current, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
+      // Use toPng for better reliability with WebGL and external images
+      const dataUrl = await toPng(mapContainer.current, {
+        cacheBust: true,
+        pixelRatio: 2, // Higher quality/resolution
+        backgroundColor: '#ffffff'
       });
       
-      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `map-export-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error('Export failed:', err);
+      alert('Không thể xuất bản đồ. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.');
     } finally {
       setIsExporting(false);
     }
@@ -3707,7 +3708,6 @@ export default function MapInterface() {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Xuất dữ liệu</h3>
               <select className="w-full bg-white border border-border-main rounded-md p-2 text-xs outline-none focus:ring-1 focus:ring-accent">
                 <option>Hình ảnh (PNG) - 300 DPI</option>
-                <option>GeoJSON Output</option>
                 <option>PDF Print ready</option>
               </select>
             </div>
