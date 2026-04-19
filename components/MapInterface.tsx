@@ -141,7 +141,7 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     }
   },
   SATELLITE: {
-    label: 'Vệ tinh',
+    label: 'Vệ tinh (ArcGIS)',
     category: 'raster',
     url: {
       version: 8,
@@ -155,6 +155,48 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
         }
       },
       layers: [{ id: 'satellite', type: 'raster', source: 'satellite-tiles' }]
+    }
+  },
+  ARCGIS_HYBRID: {
+    label: 'ArcGIS Hỗn hợp',
+    category: 'raster',
+    url: {
+      version: 8,
+      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
+      sources: {
+        'arcgis-imagery': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Tiles &copy; Esri'
+        },
+        'arcgis-labels': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256
+        }
+      },
+      layers: [
+        { id: 'arcgis-imagery', type: 'raster', source: 'arcgis-imagery' },
+        { id: 'arcgis-labels', type: 'raster', source: 'arcgis-labels' }
+      ]
+    }
+  },
+  ARCGIS_TERRAIN_BASE: {
+    label: 'ArcGIS Địa hình (Base)',
+    category: 'raster',
+    url: {
+      version: 8,
+      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
+      sources: {
+        'arcgis-terrain': {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Tiles &copy; Esri'
+        }
+      },
+      layers: [{ id: 'arcgis-terrain', type: 'raster', source: 'arcgis-terrain' }]
     }
   },
   ARCHITECTURE: {
@@ -2565,7 +2607,7 @@ export default function MapInterface() {
                            const currentBearing = map.current.getBearing();
                            
                            let targetZoom = currentZoom;
-                           const isSatellite = key === 'SATELLITE' || key === 'HYBRID';
+                           const isSatellite = key === 'SATELLITE' || key === 'HYBRID' || key === 'ARCGIS_HYBRID';
                            if (isSatellite && targetZoom > 16) {
                              targetZoom = 16;
                            }
