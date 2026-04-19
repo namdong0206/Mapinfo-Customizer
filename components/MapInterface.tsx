@@ -56,12 +56,7 @@ import bearing from '@turf/bearing';
 import lineDistance from '@turf/line-distance';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
 import lineSlice from '@turf/line-slice';
-
-import accidentIcon from '@/public/2574867725.png';
-import fireHouseIcon from '@/public/11442696.png';
-import floodIcon from '@/public/9211918.png';
-import landslideIcon from '@/public/263720581.png';
-import fireForestIcon from '@/public/9211928.png';
+import { DISASTER_ICONS_DATA } from './disasterIconsData';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -489,12 +484,12 @@ const ICON_PATHS: Record<string, string> = {
 
 const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse' | 'float' | 'shake' }> = {
   '3d-accident': { 
-    url: accidentIcon.src, 
+    url: DISASTER_ICONS_DATA['2574867725.png'] || '/2574867725.png', 
     label: 'Tai nạn GT',
     anim: 'shake'
   },
   '3d-fire-house': { 
-    url: fireHouseIcon.src, 
+    url: DISASTER_ICONS_DATA['11442696.png'] || '/11442696.png', 
     label: 'Cháy nhà',
     anim: 'pulse'
   },
@@ -504,17 +499,17 @@ const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse'
     anim: 'pulse'
   },
   '3d-flood': { 
-    url: floodIcon.src, 
+    url: DISASTER_ICONS_DATA['9211918.png'] || '/9211918.png', 
     label: 'Mưa lũ',
     anim: 'float'
   },
   '3d-landslide': { 
-    url: landslideIcon.src, 
+    url: DISASTER_ICONS_DATA['263720581.png'] || '/263720581.png', 
     label: 'Sụt lở',
     anim: 'shake'
   },
   '3d-fire-forest': { 
-    url: fireForestIcon.src, 
+    url: DISASTER_ICONS_DATA['9211928.png'] || '/9211928.png', 
     label: 'Cháy rừng',
     anim: 'pulse'
   },
