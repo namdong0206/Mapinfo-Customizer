@@ -54,6 +54,14 @@ import along from '@turf/along';
 import destination from '@turf/destination';
 import bearing from '@turf/bearing';
 import lineDistance from '@turf/line-distance';
+import nearestPointOnLine from '@turf/nearest-point-on-line';
+import lineSlice from '@turf/line-slice';
+
+import accidentIcon from '@/public/2574867725.png';
+import fireHouseIcon from '@/public/11442696.png';
+import floodIcon from '@/public/9211918.png';
+import landslideIcon from '@/public/263720581.png';
+import fireForestIcon from '@/public/9211928.png';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -349,16 +357,41 @@ const mapboxDrawStyles = [
   {
     id: "gl-draw-point-inner",
     type: "circle",
-    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "feature"]],
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "feature"], ["!=", "user_isRealRoute", true]],
     paint: {
       "circle-radius": 5,
       "circle-color": ["coalesce", ["get", "user_color"], "#3bb2d0"],
     },
   },
   {
+    id: "gl-draw-point-real-route",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "feature"], ["==", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 0
+    },
+  },
+  {
+    id: "gl-draw-vertex-static",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["!=", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 5,
+      "circle-color": "#fbb03b"
+    }
+  },
+  {
+    id: "gl-draw-vertex-real-route-static",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["==", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 0
+    }
+  },
+  {
     id: "gl-draw-vertex-inner",
     type: "circle",
-    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"]],
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["!=", "user_isRealRoute", true]],
     paint: {
       "circle-radius": 6,
       "circle-color": "#fbb03b",
@@ -367,9 +400,56 @@ const mapboxDrawStyles = [
     },
   },
   {
+    id: "gl-draw-vertex-real-route",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["==", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 5, // Smaller vertex for real routes
+      "circle-color": "#3b82f6",
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#fff"
+    },
+  },
+  {
+    id: "gl-draw-vertex-real-route-active",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["==", "user_isRealRoute", true], ["==", "active", "true"]],
+    paint: {
+      "circle-radius": 7,
+      "circle-color": "#2563eb",
+      "circle-stroke-width": 3,
+      "circle-stroke-color": "#fff"
+    },
+  },
+  {
+    id: "gl-draw-vertex-active-outline",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["!=", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 8,
+      "circle-color": "#fff"
+    }
+  },
+  {
+    id: "gl-draw-vertex-active-outline-real",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "vertex"], ["==", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 0
+    }
+  },
+  {
+    id: "gl-draw-midpoint-real-route",
+    type: "circle",
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "midpoint"], ["==", "user_isRealRoute", true]],
+    paint: {
+      "circle-radius": 0 // Completely remove midpoints for real routes
+    },
+  },
+  {
     id: "gl-draw-midpoint-inner",
     type: "circle",
-    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "midpoint"]],
+    filter: ["all", ["==", "$type", "Point"], ["==", "meta", "midpoint"], ["!=", "user_isRealRoute", true]],
     paint: {
       "circle-radius": 4,
       "circle-color": "#fbb03b",
@@ -409,12 +489,12 @@ const ICON_PATHS: Record<string, string> = {
 
 const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse' | 'float' | 'shake' }> = {
   '3d-accident': { 
-    url: '/2574867725.png', 
+    url: accidentIcon.src, 
     label: 'Tai nạn GT',
     anim: 'shake'
   },
   '3d-fire-house': { 
-    url: '/11442696.png', 
+    url: fireHouseIcon.src, 
     label: 'Cháy nhà',
     anim: 'pulse'
   },
@@ -424,17 +504,17 @@ const DISASTER_ICONS: Record<string, { url: string; label: string; anim: 'pulse'
     anim: 'pulse'
   },
   '3d-flood': { 
-    url: '/9211918.png', 
+    url: floodIcon.src, 
     label: 'Mưa lũ',
     anim: 'float'
   },
   '3d-landslide': { 
-    url: '/263720581.png', 
+    url: landslideIcon.src, 
     label: 'Sụt lở',
     anim: 'shake'
   },
   '3d-fire-forest': { 
-    url: '/9211928.png', 
+    url: fireForestIcon.src, 
     label: 'Cháy rừng',
     anim: 'pulse'
   },
@@ -1359,7 +1439,30 @@ export default function MapInterface() {
 
   const fetchRealRoute = useCallback(async (featureId: string, waypoints: number[][], mode: string) => {
     try {
-      const query = waypoints.map(c => c.join(',')).join(';');
+      let queryWaypoints = [...waypoints];
+
+      // HEURISTIC: If routing within Vietnam and distance is large, add a via point in Central VN (Da Nang)
+      // to prevent OSRM from suggesting routes through Laos/Cambodia.
+      if (waypoints.length === 2) {
+        const [start, end] = waypoints;
+        const isVietnam = (c: number[]) => c[0] >= 102 && c[0] <= 110 && c[1] >= 8 && c[1] <= 24;
+        
+        if (isVietnam(start) && isVietnam(end)) {
+          const latDiff = Math.abs(start[1] - end[1]);
+          // If vertical distance is more than ~4 deg (~450km), add Da Nang as via point
+          if (latDiff > 4) {
+            const danang: [number, number] = [108.2022, 16.0544];
+            const distToStart = Math.sqrt(Math.pow(start[0] - danang[0], 2) + Math.pow(start[1] - danang[1], 2));
+            const distToEnd = Math.sqrt(Math.pow(end[0] - danang[0], 2) + Math.pow(end[1] - danang[1], 2));
+            
+            if (distToStart > 1 && distToEnd > 1) {
+              queryWaypoints.splice(1, 0, danang);
+            }
+          }
+        }
+      }
+
+      const query = queryWaypoints.map(c => c.join(',')).join(';');
       const service = mode === 'walking' ? 'routed-foot' : mode === 'motorbike' ? 'routed-car' : 'routed-car';
       
       const response = await fetch(`https://routing.openstreetmap.de/${service}/route/v1/driving/${query}?geometries=geojson`);
@@ -1369,7 +1472,18 @@ export default function MapInterface() {
             const routeGeometry = data.routes[0].geometry;
             
             if (draw.current) {
-              // Robust property setting
+              // Snap nodes to actual road positions from OSRM
+              if (data.waypoints && data.waypoints.length === queryWaypoints.length) {
+                const snappedCoords = data.waypoints.map((wp: any) => wp.location);
+                const feat = draw.current.get(featureId);
+                if (feat && feat.geometry.type === 'LineString') {
+                  draw.current.add({
+                    ...feat,
+                    geometry: { ...feat.geometry, coordinates: snappedCoords }
+                  });
+                }
+              }
+
               draw.current.setFeatureProperty(featureId, 'routeGeometry', routeGeometry);
               draw.current.setFeatureProperty(featureId, 'isRealRoute', true); 
               draw.current.setFeatureProperty(featureId, 'isRoute', true);
@@ -1676,7 +1790,52 @@ export default function MapInterface() {
         }
       }
 
-      // 2. Update animation layers (vehicles) ON TOP of routes
+      // 3. Start/End Indicators for Active Real Route
+      const activeRealRoute = drawnFeatures.find(f => f.id === selectedFeatureId && f.properties?.isRealRoute);
+      const endpointFeatures: any[] = [];
+      if (activeRealRoute && activeRealRoute.geometry.type === 'LineString') {
+        const coords = activeRealRoute.geometry.coordinates;
+        if (coords.length >= 2) {
+          endpointFeatures.push({
+            type: 'Feature',
+            id: 'active-route-start',
+            geometry: { type: 'Point', coordinates: coords[0] },
+            properties: { type: 'start' }
+          });
+          endpointFeatures.push({
+            type: 'Feature',
+            id: 'active-route-end',
+            geometry: { type: 'Point', coordinates: coords[coords.length - 1] },
+            properties: { type: 'end' }
+          });
+        }
+      }
+
+      if (!m.getSource('route-endpoints')) {
+        m.addSource('route-endpoints', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: endpointFeatures }
+        });
+        m.addLayer({
+          id: 'route-endpoints-layer',
+          type: 'circle',
+          source: 'route-endpoints',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': ['match', ['get', 'type'], 'start', '#22c55e', 'end', '#ef4444', '#3b82f6'],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#fff',
+            'circle-opacity': 1
+          }
+        });
+      } else {
+        const source = m.getSource('route-endpoints') as maplibregl.GeoJSONSource;
+        if (source) {
+          source.setData({ type: 'FeatureCollection', features: endpointFeatures });
+        }
+      }
+
+      // 4. Update animation layers (vehicles) ON TOP of routes
       drawnFeatures.forEach(f => {
         if (f.properties?.routeGeometry) {
           const sourceId = `vehicle-${f.id}`;
@@ -1894,6 +2053,93 @@ export default function MapInterface() {
         forceEnableInteractions();
         forceEnable();
       }, 0);
+    });
+
+    // Custom interaction: Double click on Real Route to add a waypoint
+    m.on('dblclick', (e) => {
+      if (!m || !d) return;
+      
+      const features = m.queryRenderedFeatures(e.point, {
+        layers: ['real-routes-layer', 'real-routes-active-layer']
+      });
+
+      if (features.length > 0) {
+        // Prevent map zoom on double click when hitting a route
+        e.preventDefault();
+        
+        const fId = String(features[0].properties.id);
+        const drawFeat = d.get(fId);
+        if (drawFeat && drawFeat.geometry.type === 'LineString') {
+          const isReal = drawFeat.properties?.isRealRoute;
+          const routeGeom = drawFeat.properties?.routeGeometry;
+          const currentCoords = [...drawFeat.geometry.coordinates];
+          const clickPoint = [e.lngLat.lng, e.lngLat.lat];
+          
+          let bestIndex = -1;
+
+          if (isReal && routeGeom) {
+            // Smart insertion based on actual route path
+            try {
+              const startPoint = { type: 'Feature', geometry: { type: 'Point', coordinates: currentCoords[0] }, properties: {} };
+              const ptOnRoute = nearestPointOnLine(routeGeom, clickPoint);
+              const distFromStart = length(lineSlice(startPoint as any, ptOnRoute as any, routeGeom));
+              
+              // Calculate distances along route for all existing waypoints
+              const waypointDists = currentCoords.map(coord => {
+                const target = { type: 'Feature', geometry: { type: 'Point', coordinates: coord }, properties: {} };
+                return length(lineSlice(startPoint as any, target as any, routeGeom));
+              });
+
+              // Find where to insert
+              bestIndex = waypointDists.findIndex(d => d > distFromStart);
+              if (bestIndex === -1) bestIndex = currentCoords.length;
+
+              // Use the point snapped to the route for better accuracy
+              currentCoords.splice(bestIndex, 0, ptOnRoute.geometry.coordinates as number[]);
+            } catch (err) {
+              console.warn('Smart waypoint insertion failed, falling back to heuristic:', err);
+            }
+          }
+
+          if (bestIndex === -1) {
+            // Heuristic fallback: find closest segment based on straight-line distances
+            let minCombinedDist = Infinity;
+            bestIndex = 1;
+            
+            for (let i = 0; i < currentCoords.length - 1; i++) {
+              const p1 = currentCoords[i];
+              const p2 = currentCoords[i+1];
+              const d1 = Math.sqrt(Math.pow(p1[0] - clickPoint[0], 2) + Math.pow(p1[1] - clickPoint[1], 2));
+              const d2 = Math.sqrt(Math.pow(p2[0] - clickPoint[0], 2) + Math.pow(p2[1] - clickPoint[1], 2));
+              const combined = d1 + d2;
+              if (combined < minCombinedDist) {
+                minCombinedDist = combined;
+                bestIndex = i + 1;
+              }
+            }
+            currentCoords.splice(bestIndex, 0, clickPoint);
+          }
+          
+          // Update the feature geometry and trigger a re-fetch of the real route
+          d.add({
+            ...drawFeat,
+            geometry: { ...drawFeat.geometry, coordinates: currentCoords }
+          });
+          
+          // Trigger a re-render of features
+          setDrawnFeatures(d.getAll().features);
+          
+          // Select and enter direct_select mode to allow immediate dragging
+          d.changeMode('direct_select', { featureId: fId });
+          setSelectedFeatureId(fId);
+          
+          // We need to call fetchRealRoute. Since we're inside the effect, 
+          // we'll rely on the draw.update event which is triggered by direct_select/interaction
+          // or we can try to call it via a ref if needed. 
+          // Actually, handleDrawUpdate will handle it if we trigger it.
+          m.fire('draw.update', { features: [d.get(fId)], action: 'change_coordinates' });
+        }
+      }
     });
 
     // Handle compass specifically - if it's disabled, we force it back
@@ -3816,7 +4062,11 @@ export default function MapInterface() {
                   onClick={() => {
                     setSelectedFeatureId(feat.id);
                     if (draw.current) {
-                      draw.current.changeMode('simple_select', { featureIds: [feat.id] });
+                      if (isRoute || feat.properties?.isRealRoute) {
+                        draw.current.changeMode('direct_select', { featureId: feat.id });
+                      } else {
+                        draw.current.changeMode('simple_select', { featureIds: [feat.id] });
+                      }
                       
                       // Center map on feature
                       const bounds = new maplibregl.LngLatBounds();
