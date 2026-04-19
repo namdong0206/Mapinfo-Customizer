@@ -256,11 +256,6 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     url: 'https://tile.openstreetmap.jp/styles/osm-bright/style.json',
     category: 'vector'
   },
-  MAPTILER_OMT: {
-    label: 'MapTiler OMT',
-    url: 'https://tiles.basemaps.cartocdn.com/gl/voyager-gl-style/style.json', // Placeholder vector style as MapTiler needs keys
-    category: 'vector'
-  },
   WATERCOLOR: {
     label: 'Bản đồ Mầu nước',
     category: 'raster',
@@ -270,7 +265,7 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
       sources: {
         'watercolor-tiles': {
           type: 'raster',
-          tiles: ['https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'],
+          tiles: [`https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg${process.env.NEXT_PUBLIC_MY_CUSTOM_STADIAMAPS_API_KEY || process.env.MY_CUSTOM_STADIAMAPS_API_KEY ? `?api_key=${process.env.NEXT_PUBLIC_MY_CUSTOM_STADIAMAPS_API_KEY || process.env.MY_CUSTOM_STADIAMAPS_API_KEY}` : ''}`],
           tileSize: 256,
           attribution: '&copy; Stadia Maps, &copy; Stamen Design, &copy; OpenStreetMap',
           maxzoom: 16
