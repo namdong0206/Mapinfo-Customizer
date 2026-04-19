@@ -255,24 +255,6 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
     label: 'Shortbread',
     url: 'https://tile.openstreetmap.jp/styles/osm-bright/style.json',
     category: 'vector'
-  },
-  WATERCOLOR: {
-    label: 'Bản đồ Mầu nước',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'watercolor-tiles': {
-          type: 'raster',
-          tiles: [`https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg${process.env.NEXT_PUBLIC_MY_CUSTOM_STADIAMAPS_API_KEY || process.env.MY_CUSTOM_STADIAMAPS_API_KEY ? `?api_key=${process.env.NEXT_PUBLIC_MY_CUSTOM_STADIAMAPS_API_KEY || process.env.MY_CUSTOM_STADIAMAPS_API_KEY}` : ''}`],
-          tileSize: 256,
-          attribution: '&copy; Stadia Maps, &copy; Stamen Design, &copy; OpenStreetMap',
-          maxzoom: 16
-        }
-      },
-      layers: [{ id: 'watercolor', type: 'raster', source: 'watercolor-tiles' }]
-    }
   }
 };
 
