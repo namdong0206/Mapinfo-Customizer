@@ -3868,11 +3868,12 @@ export default function MapInterface() {
                          <button 
                           onClick={(e) => {
                              e.stopPropagation();
-                             setIsAnimationPaused(!isAnimationPaused);
+                             const currentlyPlaying = animatingFeatures[feat.id]?.isPlaying !== false;
+                             updateAnimationConfig(feat.id, { isPlaying: !currentlyPlaying });
                           }}
                           className="w-10 h-10 rounded-lg bg-zinc-900 text-white flex items-center justify-center hover:bg-black transition-all shadow-sm"
                          >
-                           {isAnimationPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+                           {animatingFeatures[feat.id]?.isPlaying === false ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
                          </button>
                          
                          <div className="flex-1 space-y-1">
