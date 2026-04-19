@@ -102,24 +102,6 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
       layers: [{ id: 'osm', type: 'raster', source: 'osm-tiles' }]
     }
   },
-  PUBLIC_TRANSPORT: {
-    label: 'Giao thông công cộng',
-    category: 'raster',
-    url: {
-      version: 8,
-      glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
-      sources: {
-        'pt-tiles': {
-          type: 'raster',
-          tiles: ['https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; Memomaps',
-          maxzoom: 18
-        }
-      },
-      layers: [{ id: 'pt', type: 'raster', source: 'pt-tiles' }]
-    }
-  },
   HYBRID: {
     label: 'Vệ tinh Nhãn',
     category: 'raster',
@@ -192,22 +174,22 @@ const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' |
       ]
     }
   },
-  ARCGIS_TERRAIN_BASE: {
-    label: 'ArcGIS Địa hình (Base)',
+  ARCGIS_HILLSHADE: {
+    label: 'ArcGIS Hillshade (Không nhãn)',
     category: 'raster',
     url: {
       version: 8,
       glyphs: "https://basemaps.cartocdn.com/gl/positron-gl-style/fonts/{fontstack}/{range}.pbf",
       sources: {
-        'arcgis-terrain': {
+        'arcgis-hillshade': {
           type: 'raster',
-          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}'],
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          attribution: 'Tiles &copy; Esri',
+          attribution: 'Tiles &copy; Esri &mdash; DEMs, Hillshades',
           maxzoom: 17
         }
       },
-      layers: [{ id: 'arcgis-terrain', type: 'raster', source: 'arcgis-terrain' }]
+      layers: [{ id: 'arcgis-hillshade', type: 'raster', source: 'arcgis-hillshade' }]
     }
   },
   ARCHITECTURE: {
