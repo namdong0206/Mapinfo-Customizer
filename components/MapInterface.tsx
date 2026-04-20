@@ -3878,7 +3878,10 @@ export default function MapInterface() {
                      Cancel
                    </button>
                    <button 
-                     onClick={() => setSelectedAdminUnits([])}
+                     onClick={() => {
+                        setSelectedAdminUnits([]);
+                        setShowDataPanel(false);
+                     }}
                      className="flex-1 py-2 bg-accent text-white text-[10px] font-bold rounded-lg hover:bg-blue-600 transition-all shadow-md active:scale-95"
                    >
                      OK
