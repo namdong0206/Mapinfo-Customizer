@@ -498,7 +498,16 @@ export default function MapInterface() {
   useEffect(() => {
     import('vconsole').then(({ default: VConsole }) => {
       try {
-        new VConsole();
+        new VConsole({
+          theme: 'light',
+          log: {
+            maxLogNumber: 1000,
+            showTimestamps: true
+          },
+          onReady: () => {
+             console.log("VConsole is ready and capturing logs.");
+          }
+        });
       } catch (e: any) {
         // Silently handle the known 'fetch' property issue.
         if (e instanceof Error && e.message.includes('fetch')) {
