@@ -496,29 +496,7 @@ export default function MapInterface() {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
   useEffect(() => {
-    import('vconsole').then(({ default: VConsole }) => {
-      try {
-        new VConsole({
-          theme: 'light',
-          log: {
-            maxLogNumber: 1000,
-            showTimestamps: true
-          },
-          onReady: () => {
-             console.log("VConsole is ready and capturing logs.");
-          }
-        });
-      } catch (e: any) {
-        // Silently handle the known 'fetch' property issue.
-        if (e instanceof Error && e.message.includes('fetch')) {
-          console.log("VConsole: Skipping fetch hook due to locked property.");
-        } else {
-          console.error("VConsole init failed:", e);
-        }
-      }
-    }).catch(e => {
-      console.error("VConsole load failed:", e);
-    });
+    // No VConsole init here
   }, []);
 
   const annotationsRef = useRef<Annotation[]>([]);
@@ -560,6 +538,7 @@ export default function MapInterface() {
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showDataPanel, setShowDataPanel] = useState(false);
   const [adminUnitColors, setAdminUnitColors] = useState<{
     provinces: Record<string, string>;
@@ -596,7 +575,6 @@ export default function MapInterface() {
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
   const prevDataCount = useRef(0);
   const prevAdminCount = useRef(0);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const currentCount = drawnFeatures.length + annotations.length;
@@ -2419,38 +2397,17 @@ export default function MapInterface() {
       // If admin boundaries are active, maybe pass it through or handle it here?
     });
 
-    // Unified map interaction handler using touchdown logic
+    // Unified map interaction handler
     const handleMapInteraction = (e: any) => {
-      console.log(`Global map INTERACTION (type: ${e.originalEvent?.type || 'unknown'}) triggered.`);
-      const eventType = e.originalEvent?.type || 'click';
-
-      if (eventType === 'touchstart') {
-          longPressTimerRef.current = setTimeout(() => {
-              if (adminBoundaryRef.current && handleProvinceClickRef.current) {
-                  console.log("Long press detected, triggering handleProvinceClick.");
-                  handleProvinceClickRef.current(e);
-              }
-          }, 600); // 600ms = sweet spot between 500-800ms
-      } else if (eventType === 'touchend' || eventType === 'touchmove') {
-          if (longPressTimerRef.current) {
-              clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-          }
-      } else {
-          // Standard click for desktop
-          if (adminBoundaryRef.current && handleProvinceClickRef.current) {
-              handleProvinceClickRef.current(e);
-          }
+      // Only trigger if in Selection Mode
+      if (isSelectionMode && adminBoundaryRef.current && handleProvinceClickRef.current) {
+          handleProvinceClickRef.current(e);
       }
-      
       handleMapClickRef.current(e);
     };
 
-    // Use touchend for reliable interaction on mobile
-    m.on('touchstart', handleMapInteraction);
+    // Use interaction handlers for both touch and click
     m.on('touchend', handleMapInteraction);
-    m.on('touchmove', handleMapInteraction);
-    // Keep click for desktop
     m.on('click', handleMapInteraction);
 
     m.on('draw.create', handleCreate);
@@ -3138,6 +3095,22 @@ export default function MapInterface() {
                     {showAdminBoundaries && <Check size={10} />}
                   </div>
                 </button>
+                {showAdminBoundaries && (
+                    <button
+                        onClick={() => setIsSelectionMode(!isSelectionMode)}
+                        className={cn(
+                            "w-full mt-1 text-[11px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
+                            isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
+                        )}
+                    >
+                        <span className="flex items-center gap-2">
+                            Chế độ Chọn vùng
+                        </span>
+                        <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center", isSelectionMode ? "bg-yellow-500 border-yellow-500 text-white" : "border-border-main bg-white")}>
+                            {isSelectionMode && <Check size={10} />}
+                        </div>
+                    </button>
+                )}
               </div>
             </motion.div>
           )}
