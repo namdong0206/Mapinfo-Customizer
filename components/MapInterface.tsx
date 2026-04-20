@@ -1027,7 +1027,66 @@ export default function MapInterface() {
         
         m.on('mouseenter', fillLayerId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', fillLayerId, () => { m.getCanvas().style.cursor = ''; });
-        m.on('click', fillLayerId, handleProvinceClickRef.current!);
+        
+        m.on('mouseenter', communeFillId, () => { m.getCanvas().style.cursor = 'pointer'; });
+        m.on('mouseleave', communeFillId, () => { m.getCanvas().style.cursor = ''; });
+
+        if (handleProvinceClickRef.current) m.off('click', handleProvinceClickRef.current);
+        
+        handleProvinceClickRef.current = (e: any) => {
+            const m = map.current;
+            if (!m) return;
+            
+            // Query for features at the clicked point, with a small buffer for touch
+            const features = m.queryRenderedFeatures(
+                [
+                    [e.point.x - 5, e.point.y - 5],
+                    [e.point.x + 5, e.point.y + 5]
+                ],
+                { layers: [fillLayerId, communeFillId] }
+            );
+            
+            if (features && features.length > 0) {
+                const feat = features[0];
+                const layerId = feat.layer.id;
+                
+                const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
+                const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
+
+                const isMultiSelect = !isTouch && (
+                   (originalEvent as MouseEvent).shiftKey ||
+                   (originalEvent as MouseEvent).ctrlKey ||
+                   (originalEvent as MouseEvent).metaKey
+                );
+
+                if (layerId === fillLayerId) {
+                    // Handle Province Click
+                    setSelectedAdminUnits(prev => {
+                        const unit = { id: feat.properties.ten_tinh, name: feat.properties.ten_tinh, level: 'province' as const, properties: feat.properties };
+                        if (isMultiSelect) {
+                            const exists = prev.find(u => u.id === unit.id && u.level === 'province');
+                            if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'province');
+                            return [...prev, unit];
+                        }
+                        return [unit];
+                    });
+                } else if (layerId === communeFillId) {
+                    // Handle Commune Click
+                    setSelectedAdminUnits(prev => {
+                        const unit = { id: feat.properties.ten_xa, name: feat.properties.ten_xa, level: 'commune' as const, properties: feat.properties };
+                        if (isMultiSelect) {
+                            const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
+                            if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
+                            return [...prev, unit];
+                        }
+                        return [unit];
+                    });
+                }
+                setShowDataPanel(true);
+            }
+        };
+
+        m.on('click', handleProvinceClickRef.current);
       } else {
         // Update existing layer paint property
         m.setPaintProperty(fillLayerId, 'fill-color', [
@@ -1146,7 +1205,6 @@ export default function MapInterface() {
          
          m.on('mouseenter', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = 'pointer'; });
          m.on('mouseleave', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = ''; });
-         m.on('click', 'vietnam-commune-fill', handleCommuneClickRef.current!);
       } else {
          m.setPaintProperty('vietnam-commune-fill', 'fill-color', [
            'match',
