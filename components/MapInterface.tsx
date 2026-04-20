@@ -2419,6 +2419,7 @@ export default function MapInterface() {
     });
 
     m.on('click', (e) => {
+      console.log("Global map click triggered.");
       if (adminBoundaryRef.current && handleProvinceClickRef.current) {
         // Manually trigger admin handler
         handleProvinceClickRef.current(e);
