@@ -494,6 +494,19 @@ export default function MapInterface() {
   const [routeType, setRouteType] = useState<'straight' | 'real'>('straight');
   const [travelMode, setTravelMode] = useState<'driving' | 'motorbike' | 'walking'>('driving');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  
+  useEffect(() => {
+    import('vconsole').then(({ default: VConsole }) => {
+      try {
+        new VConsole();
+      } catch (e) {
+        console.error("VConsole init failed:", e);
+      }
+    }).catch(e => {
+      console.error("VConsole load failed:", e);
+    });
+  }, []);
+
   const annotationsRef = useRef<Annotation[]>([]);
   const markerInstances = useRef<Record<string, maplibregl.Marker>>({});
   
