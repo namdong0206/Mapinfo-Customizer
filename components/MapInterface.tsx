@@ -564,8 +564,8 @@ export default function MapInterface() {
   const is3DRef = useRef(is3D);
   const mapStyleRef = useRef(mapStyleKey);
   const adminBoundaryRef = useRef(showAdminBoundaries);
-  const handleProvinceClickRef = useRef<(e: any) => void>();
-  const handleCommuneClickRef = useRef<(e: any) => void>();
+  const handleProvinceClickRef = useRef<(e: any) => void>(null);
+  const handleCommuneClickRef = useRef<(e: any) => void>(null);
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
   const prevDataCount = useRef(0);
   const prevAdminCount = useRef(0);
