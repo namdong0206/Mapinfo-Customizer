@@ -3531,9 +3531,9 @@ export default function MapInterface() {
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="flex w-[280px] sm:w-[320px] lg:w-[280px] bg-white border-l border-border-main flex-col z-40 shrink-0 overflow-hidden absolute right-0 top-0 h-full lg:relative lg:h-auto shadow-2xl lg:shadow-none"
+              className="flex w-[280px] sm:w-[320px] lg:w-[280px] bg-white border-l border-border-main flex-col z-40 shrink-0 overflow-hidden absolute right-0 top-[52px] h-[calc(100%-52px)] md:top-0 md:h-full lg:relative lg:h-auto shadow-2xl lg:shadow-none"
             >
-              <div className="p-4 border-b border-border-main flex items-center justify-between">
+              <div className="p-3 md:p-4 border-b border-border-main flex items-center justify-between">
                 <h2 className="text-sm font-semibold truncate">Lớp dữ liệu ({drawnFeatures.length + annotations.length})</h2>
                 <div className="flex items-center gap-1">
                   <button 
