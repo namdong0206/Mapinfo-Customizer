@@ -2717,16 +2717,16 @@ export default function MapInterface() {
   return (
     <div className="flex flex-col h-screen w-full bg-bg-ui text-text-main overflow-hidden">
       {/* Header Area */}
-      <header className="h-[60px] bg-white border-b border-border-main flex items-center px-5 justify-between z-30 shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
+      <header className="h-auto md:h-[60px] py-2 md:py-0 bg-white border-b border-border-main flex flex-wrap items-center px-3 md:px-5 justify-between z-30 shadow-sm shrink-0 gap-y-2">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold shadow-sm shrink-0">
             M
           </div>
-          <h1 className="text-lg font-semibold tracking-tight">MapInfo Customizer</h1>
+          <h1 className="text-base md:text-lg font-semibold tracking-tight hidden sm:block">MapInfo Customizer</h1>
         </div>
         
-        <div className="hidden md:flex items-center bg-bg-ui border border-border-main rounded-lg px-3 py-1.5 w-[400px] gap-2">
-          <Search size={16} className="text-text-muted" />
+        <div className="order-last w-full md:order-none md:w-[350px] lg:w-[400px] flex items-center bg-bg-ui border border-border-main rounded-lg px-3 py-1.5 gap-2">
+          <Search size={16} className="text-text-muted shrink-0" />
           <input 
             type="text" 
             placeholder="Tìm kiếm địa điểm..." 
@@ -2739,11 +2739,11 @@ export default function MapInterface() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="px-3 py-1.5 bg-white border border-border-main rounded-md text-xs font-medium hover:bg-zinc-50 transition-colors">
-            Nhập dữ liệu
+        <div className="flex items-center gap-2 md:gap-3">
+          <button className="px-2 md:px-3 py-1.5 bg-white border border-border-main rounded-md text-xs font-medium hover:bg-zinc-50 transition-colors">
+            Nhập<span className="hidden sm:inline"> dữ liệu</span>
           </button>
-          <div className="w-9 h-9 rounded-full bg-zinc-200 border-2 border-white shadow-sm overflow-hidden relative">
+          <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-200 border-2 border-white shadow-sm overflow-hidden relative shrink-0">
             <Image src="https://picsum.photos/seed/user/100/100" alt="User" fill referrerPolicy="no-referrer" />
           </div>
         </div>
@@ -3139,20 +3139,18 @@ export default function MapInterface() {
                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-xl shadow-panel border border-border-main flex items-center gap-3 z-30"
+                className="absolute bottom-6 md:bottom-6 left-1/2 -translate-x-1/2 w-[90%] sm:w-auto max-w-[340px] sm:max-w-none bg-white/95 backdrop-blur-md px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl shadow-panel border border-border-main flex items-center justify-between sm:justify-start gap-2 sm:gap-3 z-30"
               >
-                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium text-text-main">
-                    {selectedFeatureId && !isLinkingMode && 'Tùy chỉnh đối tượng: Điều chỉnh tham số ở bảng bên phải.'}
-                    {activeMode === 'draw_polygon' && 'Vẽ vùng: Click các điểm, nối điểm đầu để hoàn tất.'}
-                    {activeMode === 'draw_line' && 'Vẽ tuyến: Click để thêm điểm nút.'}
-                    {activeMode === 'annotate' && 'Ghi chú: Click vị trí trên bản đồ để đặt chú thích.'}
-                    {activeMode === 'image' && 'Chèn ảnh: Click vị trí trên bản đồ để đặt ảnh.'}
-                    {activeMode === 'icon' && 'Chèn biểu tượng: Click vị trí trên bản đồ để đặt biểu tượng.'}
-                    {isLinkingMode && 'Kết nối: Tìm kiếm địa điểm mới ở ô tìm kiếm để vẽ tuyến.'}
+                <div className="hidden sm:block w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
+                <div className="flex flex-col flex-1">
+                  <span className="text-[11px] sm:text-xs font-medium text-text-main leading-tight">
+                    {selectedFeatureId && !isLinkingMode && <><span className="hidden sm:inline">Tùy chỉnh đối tượng: </span>Điều chỉnh tham số bên phải.</>}
+                    {activeMode === 'draw_polygon' && <><span className="hidden sm:inline">Vẽ vùng: </span>Click các điểm, nối điểm đầu.</>}
+                    {activeMode === 'draw_line' && <><span className="hidden sm:inline">Vẽ tuyến: </span>Click để thêm điểm nút.</>}
+                    {(activeMode === 'annotate' || activeMode === 'image' || activeMode === 'icon') && 'Click vị trí trên bản đồ để đặt ảnh/icon/chú thích.'}
+                    {isLinkingMode && <><span className="hidden sm:inline">Kết nối: </span>Tìm kiếm địa điểm mới.</>}
                   </span>
-                  <p className="text-[10px] text-text-muted italic border-t border-border-main/50 mt-1 pt-1 opacity-80">
+                  <p className="hidden sm:block text-[10px] text-text-muted italic border-t border-border-main/50 mt-1 pt-1 opacity-80">
                     * Mẹo: Nhấn giữ Chuột phải + Kéo hoặc 2 ngón tay để Xoay bản đồ
                   </p>
                 </div>
@@ -3169,7 +3167,7 @@ export default function MapInterface() {
                     setSelectedFeatureId(null);
                     setIsLinkingMode(false);
                   }}
-                  className="ml-2 px-3 py-1 bg-zinc-900 text-white text-[10px] uppercase font-bold tracking-wider rounded-md hover:bg-zinc-800 transition-colors shadow-lg active:scale-95 transition-transform"
+                  className="px-3 py-1.5 sm:py-1 bg-zinc-900 text-white text-[10px] sm:text-[10px] uppercase font-bold tracking-wider rounded-md hover:bg-zinc-800 transition-colors shadow-lg active:scale-95 transition-transform shrink-0"
                 >
                   Hoàn thành
                 </button>
@@ -3185,32 +3183,32 @@ export default function MapInterface() {
                   initial={{ opacity: 0, scale: 0.9, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                  className="bg-white rounded-3xl shadow-2xl border border-zinc-200 w-full max-w-lg overflow-hidden flex flex-col"
+                  className="bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-zinc-200 w-full max-w-lg overflow-hidden flex flex-col"
                 >
-                  <div className="p-6 border-b border-zinc-100 bg-zinc-50 flex items-center justify-between">
+                  <div className="p-4 md:p-6 border-b border-zinc-100 bg-zinc-50 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-xl text-zinc-900 flex items-center gap-2">
+                      <h3 className="font-bold text-lg md:text-xl text-zinc-900 flex items-center gap-2">
                         <Route className="text-accent" />
                         Kết nối địa điểm mới
                       </h3>
-                      <p className="text-xs text-text-muted mt-1">Tìm kiếm điểm đến để tạo tuyến đường tự động</p>
+                      <p className="text-[10px] md:text-xs text-text-muted mt-1">Tìm kiếm điểm đến để tạo tuyến đường tự động</p>
                     </div>
-                    <button onClick={() => setShowSearchModal(false)} className="p-2 hover:bg-zinc-200 rounded-full transition-colors">
-                      <X size={24} />
+                    <button onClick={() => setShowSearchModal(false)} className="p-1 md:p-2 hover:bg-zinc-200 rounded-full transition-colors">
+                      <X size={20} className="md:w-6 md:h-6" />
                     </button>
                   </div>
                   
-                  <div className="p-8 space-y-8">
-                    <div className="space-y-3">
+                  <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+                    <div className="space-y-2 md:space-y-3">
                       <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">Tìm kiếm vị trí</label>
                       <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" size={20} />
+                        <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors w-4 h-4 md:w-5 md:h-5" />
                         <input 
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Nhập tên địa danh, thành phố, địa chỉ..."
-                          className="w-full pl-12 pr-4 py-4 bg-zinc-50 border-2 border-zinc-100 rounded-2xl focus:border-accent focus:bg-white outline-none transition-all text-sm font-medium"
+                          placeholder="Nhập tên địa danh, thành phố..."
+                          className="w-full pl-9 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 bg-zinc-50 border-2 border-zinc-100 rounded-xl md:rounded-2xl focus:border-accent focus:bg-white outline-none transition-all text-sm font-medium"
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -3239,29 +3237,29 @@ export default function MapInterface() {
                       <p className="text-[10px] text-text-muted italic px-2">Nhấn Enter hoặc nút bên dưới để tìm kiếm</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3 md:gap-4">
+                      <div className="space-y-2 md:space-y-3">
                         <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Kiểu tuyến đường</label>
                         <div className="flex bg-zinc-100 p-1 rounded-xl">
                           <button 
                             onClick={() => setRouteType('straight')}
                             className={cn(
-                              "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                              "flex-1 py-1.5 md:py-2 text-[10px] md:text-xs font-bold rounded-lg transition-all",
                               routeType === 'straight' ? "bg-white text-accent shadow-sm" : "text-text-muted hover:text-text-main"
                             )}
                           >Air</button>
                           <button 
                             onClick={() => setRouteType('real')}
                             className={cn(
-                              "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                              "flex-1 py-1.5 md:py-2 text-[10px] md:text-xs font-bold rounded-lg transition-all",
                               routeType === 'real' ? "bg-white text-accent shadow-sm" : "text-text-muted hover:text-text-main"
                             )}
                           >Real</button>
                         </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2 md:space-y-3">
                         <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Phương tiện</label>
-                        <div className="flex gap-1.5 overflow-x-auto pb-1 bg-zinc-100 p-1 rounded-xl">
+                        <div className="flex gap-1 overflow-x-auto pb-0.5 md:pb-1 bg-zinc-100 p-1 rounded-xl">
                           {([
                             { id: 'driving', icon: <Car size={14} /> },
                             { id: 'motorbike', icon: <Bike size={14} /> },
@@ -3271,7 +3269,7 @@ export default function MapInterface() {
                               key={mode.id}
                               onClick={() => setTravelMode(mode.id)}
                               className={cn(
-                                "flex-1 py-2 rounded-lg transition-all flex items-center justify-center",
+                                "flex-1 py-1.5 md:py-2 rounded-lg transition-all flex items-center justify-center",
                                 travelMode === mode.id ? "bg-white text-accent shadow-sm" : "text-text-muted hover:bg-zinc-200"
                               )}
                             >
@@ -3283,10 +3281,10 @@ export default function MapInterface() {
                     </div>
                   </div>
                   
-                  <div className="p-6 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-3">
+                  <div className="p-4 md:p-6 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-2 md:gap-3">
                     <button 
                       onClick={() => setShowSearchModal(false)}
-                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
+                      className="px-4 py-2 md:px-6 md:py-3 text-[10px] md:text-xs font-bold uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
                     >Hủy bỏ</button>
                     <button 
                       onClick={async () => {
@@ -3310,13 +3308,13 @@ export default function MapInterface() {
                       }}
                       disabled={!searchQuery || isSearching}
                       className={cn(
-                        "px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm",
+                        "px-4 py-2 md:px-6 md:py-3 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all shadow-sm",
                         !searchQuery 
                           ? "bg-zinc-200 text-zinc-400 cursor-not-allowed" 
                           : "bg-accent text-white hover:bg-blue-600 active:scale-95"
                       )}
                     >
-                      {isSearching ? 'Đang kết nối...' : 'Tìm kiếm & Kết nối'}
+                      {isSearching ? 'Đang...' : 'Kết nối'}
                     </button>
                   </div>
                 </motion.div>
@@ -3327,77 +3325,77 @@ export default function MapInterface() {
           {/* Custom Asset Input Modal */}
           <AnimatePresence>
             {assetModal.isOpen && !assetModal.editId && (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4">
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="bg-white rounded-2xl shadow-2xl border border-border-main w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col"
+                  className="bg-white rounded-2xl shadow-2xl border border-border-main w-full max-w-md max-h-[85vh] md:max-h-[80vh] overflow-hidden flex flex-col"
                 >
-                  <div className="p-5 border-b border-border-main bg-zinc-50 flex items-center justify-between shrink-0">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
-                       {assetModal.type === 'annotate' && <Info className="text-blue-500" size={20} />}
-                       {assetModal.type === 'image' && <Download className="text-orange-500 rotate-180" size={20} />}
-                       {assetModal.type === 'icon' && <MapPin className="text-green-500" size={20} />}
+                  <div className="p-4 md:p-5 border-b border-border-main bg-zinc-50 flex items-center justify-between shrink-0">
+                    <h3 className="font-bold text-base md:text-lg flex items-center gap-2">
+                       {assetModal.type === 'annotate' && <Info className="text-blue-500 w-4 h-4 md:w-5 md:h-5" />}
+                       {assetModal.type === 'image' && <Download className="text-orange-500 w-4 h-4 md:w-5 md:h-5 rotate-180" />}
+                       {assetModal.type === 'icon' && <MapPin className="text-green-500 w-4 h-4 md:w-5 md:h-5" />}
                        {assetModal.type === 'annotate' && 'Thêm chú thích'}
                        {assetModal.type === 'image' && 'Chèn hình ảnh'}
                        {assetModal.type === 'icon' && 'Chèn biểu tượng'}
                     </h3>
                     <button 
                       onClick={() => setAssetModal(prev => ({ ...prev, isOpen: false }))}
-                      className="p-1.5 hover:bg-zinc-100 rounded-full transition-colors text-text-muted"
+                      className="p-1.5 hover:bg-zinc-200 rounded-full transition-colors text-text-muted"
                     >
-                      <Plus className="rotate-45" size={20} />
+                      <Plus className="rotate-45 w-4 h-4 md:w-5 md:h-5" />
                     </button>
                   </div>
                   
-                  <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                    <div className="space-y-1.5">
+                  <div className="p-4 md:p-6 space-y-4 md:space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="space-y-1 md:space-y-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Nội dung hiển thị</label>
                       <input 
                         type="text" 
                         value={assetModal.text}
                         onChange={(e) => setAssetModal(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="Nhập ghi chú hoặc mô tả..."
-                        className="w-full px-4 py-3 bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all"
+                        className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all"
                         autoFocus
                       />
                     </div>
                     
                     {(assetModal.type === 'image' || assetModal.type === 'annotate') && (
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
+                      <div className="space-y-2 md:space-y-3">
+                        <div className="space-y-1 md:space-y-1.5">
                           <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Chọn ảnh hoặc Nhập URL</label>
                           <div className="flex gap-2">
                              <label className="flex-1 cursor-pointer">
                                 <div className={cn(
-                                  "flex items-center justify-center gap-2 px-4 py-3 border border-dashed rounded-xl transition-all",
+                                  "flex items-center justify-center gap-2 px-3 py-2 md:px-4 md:py-3 border border-dashed rounded-xl transition-all",
                                   assetModal.imageUrl ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-zinc-50 border-border-main text-text-muted hover:border-accent"
                                 )}>
-                                  <Download className="rotate-180" size={18} />
-                                  <span className="text-xs font-bold uppercase">{assetModal.imageUrl.startsWith('data:') ? 'Đã chọn ảnh' : 'Tải ảnh lên'}</span>
+                                  <Download className="rotate-180 w-4 h-4 md:w-5 md:h-5" />
+                                  <span className="text-[10px] md:text-xs font-bold uppercase">{assetModal.imageUrl.startsWith('data:') ? 'Đã chọn ảnh' : 'Tải lên'}</span>
                                   <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                                 </div>
                              </label>
                              {assetModal.imageUrl && (
                                <button 
                                 onClick={() => setAssetModal(prev => ({ ...prev, imageUrl: '' }))}
-                                className="p-3 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-100"
+                                className="p-2 md:p-3 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-100 flex items-center justify-center"
                                >
-                                 <Plus className="rotate-45" size={18} />
+                                 <Plus className="rotate-45 w-4 h-4 md:w-5 md:h-5" />
                                </button>
                              )}
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-1 md:space-y-1.5">
                           <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Đường dẫn ảnh trực tiếp</label>
                           <input 
                             type="text" 
                             value={assetModal.imageUrl}
                             onChange={(e) => setAssetModal(prev => ({ ...prev, imageUrl: e.target.value }))}
                             placeholder="https://images.unsplash.com/..."
-                            className="w-full px-4 py-3 bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all font-mono text-[10px]"
+                            className="w-full px-3 py-2 md:px-4 md:py-3 bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all font-mono text-[10px]"
                           />
                         </div>
 
@@ -3413,61 +3411,61 @@ export default function MapInterface() {
                     )}
                     
                     {assetModal.type === 'image' && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 md:space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Kích thước (pixels)</label>
                         <input 
                           type="number" 
                           value={assetModal.size}
                           onChange={(e) => setAssetModal(prev => ({ ...prev, size: e.target.value }))}
-                          className="w-full px-4 py-3 bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all"
+                          className="w-full px-3 py-2 md:px-4 md:py-3 text-sm bg-zinc-50 border border-border-main rounded-xl focus:ring-2 focus:ring-accent outline-none transition-all"
                         />
                       </div>
                     )}
 
                     {assetModal.type === 'icon' && (
-                       <div className="space-y-1.5">
+                       <div className="space-y-1 md:space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Biểu tượng hiện đại 3D</label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
                           {Object.entries(DISASTER_ICONS).map(([id, data]) => (
                             <button 
                               key={id}
                               onClick={() => setAssetModal(prev => ({ ...prev, icon: id, text: data.label }))}
                               className={cn(
-                                "p-2 rounded-xl border transition-all flex flex-col items-center gap-1 group",
+                                "p-1.5 md:p-2 rounded-xl border transition-all flex flex-col items-center gap-0.5 md:gap-1 group",
                                 assetModal.icon === id ? "bg-accent/10 border-accent shadow-sm" : "bg-white border-border-main hover:bg-zinc-50"
                               )}
                             >
-                               <img src={data.url} className="w-8 h-8 object-contain group-hover:scale-110 transition-transform" alt={data.label} />
-                               <span className="text-[8px] font-bold text-center leading-tight truncate w-full">{data.label}</span>
+                               <img src={data.url} className="w-6 h-6 md:w-8 md:h-8 object-contain group-hover:scale-110 transition-transform" alt={data.label} />
+                               <span className="text-[7.5px] md:text-[8px] font-bold text-center leading-tight truncate w-full">{data.label}</span>
                             </button>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="pt-4 border-t border-border-main space-y-4">
+                    <div className="pt-3 md:pt-4 border-t border-border-main space-y-3 md:space-y-4">
                       <h4 className="text-[10px] font-bold uppercase text-accent tracking-widest">Tùy chỉnh chữ</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
+                      <div className="grid grid-cols-2 gap-3 md:gap-4">
+                        <div className="space-y-1 md:space-y-1.5">
                           <label className="text-[10px] font-bold uppercase text-text-muted">Màu chữ</label>
                           <input 
                             type="color" 
                             value={assetModal.textColor}
                             onChange={(e) => setAssetModal(prev => ({ ...prev, textColor: e.target.value }))}
-                            className="w-full h-10 rounded-lg cursor-pointer p-0 border-none"
+                            className="w-full h-8 md:h-10 rounded-lg cursor-pointer p-0 border-none"
                           />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1 md:space-y-1.5">
                           <label className="text-[10px] font-bold uppercase text-text-muted">Cỡ chữ ({assetModal.fontSize}px)</label>
                           <input 
                             type="range" min="8" max="48" 
                             value={assetModal.fontSize}
                             onChange={(e) => setAssetModal(prev => ({ ...prev, fontSize: parseInt(e.target.value) }))}
-                            className="w-full h-10 accent-accent"
+                            className="w-full h-8 md:h-10 accent-accent"
                           />
                         </div>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 md:space-y-1.5">
                         <label className="text-[10px] font-bold uppercase text-text-muted">Độ đậm font</label>
                         <div className="flex gap-2">
                           {['400', '600', '800'].map(w => (
@@ -3475,7 +3473,7 @@ export default function MapInterface() {
                               key={w}
                               onClick={() => setAssetModal(prev => ({ ...prev, fontWeight: w }))}
                               className={cn(
-                                "flex-1 py-2 text-[10px] font-bold rounded-lg border transition-all",
+                                "flex-1 py-1.5 md:py-2 text-[10px] font-bold rounded-lg border transition-all",
                                 assetModal.fontWeight === w ? "bg-accent text-white border-accent" : "bg-white border-border-main text-text-muted"
                               )}
                             >
@@ -3487,20 +3485,20 @@ export default function MapInterface() {
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-zinc-50 border-t border-border-main flex gap-3 shrink-0">
+                  <div className="p-3 md:p-4 bg-zinc-50 border-t border-border-main flex gap-2 md:gap-3 shrink-0">
                     <button 
                       onClick={() => {
                         setAssetModal(prev => ({ ...prev, isOpen: false }));
                         setActiveMode('view');
                         if (map.current) map.current.getCanvas().style.cursor = '';
                       }}
-                      className="flex-1 py-3 bg-white border border-border-main text-text-main font-bold rounded-xl hover:bg-zinc-100 transition-colors"
+                      className="flex-1 py-2 md:py-3 bg-white border border-border-main text-[10px] md:text-xs text-text-main font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-100 transition-colors"
                     >
                       Hủy
                     </button>
                     <button 
                       onClick={saveAsset}
-                      className="flex-[2] py-3 bg-zinc-900 text-white font-bold rounded-xl hover:bg-zinc-800 transition-colors shadow-lg active:scale-[0.98] transition-transform"
+                      className="flex-[2] py-2 md:py-3 bg-zinc-900 text-white text-[10px] md:text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-800 transition-colors shadow-lg active:scale-[0.98] transition-transform"
                     >
                       Hoàn thành
                     </button>
@@ -3520,7 +3518,7 @@ export default function MapInterface() {
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="hidden lg:flex w-[280px] bg-white border-l border-border-main flex-col z-20 shrink-0 overflow-hidden"
+              className="flex w-[280px] sm:w-[320px] lg:w-[280px] bg-white border-l border-border-main flex-col z-40 shrink-0 overflow-hidden absolute right-0 top-0 h-full lg:relative lg:h-auto shadow-2xl lg:shadow-none"
             >
               <div className="p-4 border-b border-border-main flex items-center justify-between">
                 <h2 className="text-sm font-semibold truncate">Lớp dữ liệu ({drawnFeatures.length + annotations.length})</h2>
