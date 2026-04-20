@@ -877,8 +877,16 @@ export default function MapInterface() {
       handleProvinceClickRef.current = (e: any) => {
         if (e.features && e.features.length > 0) {
           const feat = e.features[0];
-          const originalEvent = e.originalEvent as MouseEvent;
-          const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+          // Check for TouchEvent vs MouseEvent safely (some browsers use originalEvent)
+          const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
+          const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
+          
+          // On touch devices, shift/ctrl/meta key is not easily available
+          const isMultiSelect = !isTouch && (
+            (originalEvent as MouseEvent).shiftKey || 
+            (originalEvent as MouseEvent).ctrlKey || 
+            (originalEvent as MouseEvent).metaKey
+          );
 
           setSelectedAdminUnits(prev => {
             const unit = {
@@ -908,8 +916,14 @@ export default function MapInterface() {
       handleCommuneClickRef.current = (e: any) => {
         if (e.features && e.features.length > 0) {
           const feat = e.features[0];
-          const originalEvent = e.originalEvent as MouseEvent;
-          const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+          const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
+          const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
+          
+          const isMultiSelect = !isTouch && (
+            (originalEvent as MouseEvent).shiftKey || 
+            (originalEvent as MouseEvent).ctrlKey || 
+            (originalEvent as MouseEvent).metaKey
+          );
 
           setSelectedAdminUnits(prev => {
             const unit = {
@@ -2790,7 +2804,7 @@ export default function MapInterface() {
       <main className="flex flex-col landscape:flex-row md:flex-row flex-1 overflow-hidden relative">
         {/* Sidebar Tool Selection */}
         <aside className="w-full h-[52px] landscape:w-16 landscape:h-full md:w-16 md:h-full bg-white border-b landscape:border-b-0 landscape:border-r md:border-b-0 md:border-r border-border-main flex flex-row landscape:flex-col md:flex-col items-center py-1.5 px-2 landscape:py-5 landscape:px-0 md:py-5 md:px-0 gap-2 md:gap-4 z-20 shrink-0 relative overflow-x-auto overflow-y-hidden landscape:overflow-y-auto landscape:overflow-x-visible md:overflow-y-auto md:overflow-x-visible custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex flex-row landscape:flex-col md:flex-col items-center gap-1.5 md:gap-4 flex-1 pb-0 pr-2 landscape:pb-4 landscape:pr-0 md:pb-4 md:pr-0 shrink-0 h-full w-max landscape:w-full md:w-full">
+          <div className="flex flex-row landscape:flex-col md:flex-col items-center justify-center landscape:justify-start md:justify-start gap-1.5 md:gap-4 flex-1 pb-0 pr-2 landscape:pb-4 landscape:pr-0 md:pb-4 md:pr-0 shrink-0 h-full w-max landscape:w-full md:w-full">
             <ToolButton 
               active={activeMode === 'draw_polygon'} 
               onClick={() => toggleDrawMode('draw_polygon')}
