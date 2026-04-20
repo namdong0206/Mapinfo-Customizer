@@ -2987,7 +2987,7 @@ export default function MapInterface() {
 
         {/* Map Center Area */}
         <section className="flex-1 relative bg-zinc-200 overflow-hidden">
-          <div ref={mapContainer} className="w-full h-full" />
+          <div ref={mapContainer} className="w-full h-full touch-none" />
 
           {/* Asset Placement & Routing Overlay */}
           {['annotate', 'image', 'icon', 'routing'].includes(activeMode) && (
