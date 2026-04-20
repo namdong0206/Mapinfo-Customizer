@@ -499,8 +499,13 @@ export default function MapInterface() {
     import('vconsole').then(({ default: VConsole }) => {
       try {
         new VConsole();
-      } catch (e) {
-        console.error("VConsole init failed:", e);
+      } catch (e: any) {
+        // Silently handle the known 'fetch' property issue.
+        if (e instanceof Error && e.message.includes('fetch')) {
+          console.log("VConsole: Skipping fetch hook due to locked property.");
+        } else {
+          console.error("VConsole init failed:", e);
+        }
       }
     }).catch(e => {
       console.error("VConsole load failed:", e);
@@ -1049,14 +1054,23 @@ export default function MapInterface() {
             const m = map.current;
             if (!m) return;
             
+            console.log("Map Click Received at:", e.point);
+            
             // Query for features at the clicked point, with a small buffer for touch
-            const features = m.queryRenderedFeatures(
-                [
-                    [e.point.x - 5, e.point.y - 5],
-                    [e.point.x + 5, e.point.y + 5]
-                ],
-                { layers: [fillLayerId, communeFillId] }
-            );
+            const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+                [e.point.x - 5, e.point.y - 5],
+                [e.point.x + 5, e.point.y + 5]
+            ];
+            
+            const features = m.queryRenderedFeatures(bbox, { layers: [fillLayerId, communeFillId] });
+            
+            console.log("Features found in admin layers:", features?.length || 0);
+            if (features && features.length > 0) {
+                console.log("First detected feature:", features[0].properties);
+            } else {
+                const allLayers = m.queryRenderedFeatures(bbox);
+                console.log("All features at click location:", allLayers.length);
+            }
             
             if (features && features.length > 0) {
                 const feat = features[0];
