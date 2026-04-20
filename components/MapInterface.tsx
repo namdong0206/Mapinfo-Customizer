@@ -566,6 +566,7 @@ export default function MapInterface() {
   const adminBoundaryRef = useRef(showAdminBoundaries);
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
   const prevDataCount = useRef(0);
+  const prevAdminCount = useRef(0);
 
   useEffect(() => {
     const currentCount = drawnFeatures.length + annotations.length;
@@ -574,6 +575,13 @@ export default function MapInterface() {
     }
     prevDataCount.current = currentCount;
   }, [drawnFeatures.length, annotations.length]);
+
+  useEffect(() => {
+    if (selectedAdminUnits.length > 0 && selectedAdminUnits.length > prevAdminCount.current) {
+      setShowDataPanel(true);
+    }
+    prevAdminCount.current = selectedAdminUnits.length;
+  }, [selectedAdminUnits.length]);
 
   useEffect(() => {
     annotationsRef.current = annotations;
@@ -855,6 +863,64 @@ export default function MapInterface() {
       const sourceId = 'vietnam-admin-source';
       const fillLayerId = 'vietnam-admin-fill';
       const lineLayerId = 'vietnam-admin-line';
+      
+      const communeSourceId = 'vietnam-commune-source';
+      const communeFillId = 'vietnam-commune-fill';
+      const communeLineId = 'vietnam-commune-line';
+
+      const handleProvinceClick = (e: any) => {
+        if (e.features && e.features.length > 0) {
+          const feat = e.features[0];
+          const originalEvent = e.originalEvent as MouseEvent;
+          const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+
+          setSelectedAdminUnits(prev => {
+            const unit = {
+              id: feat.properties.ten_tinh,
+              name: feat.properties.ten_tinh,
+              level: 'province' as const,
+              properties: feat.properties
+            };
+            
+            if (isMultiSelect) {
+              const exists = prev.find(u => u.id === unit.id && u.level === 'province');
+              if (exists) {
+                return prev.filter(u => u.id !== unit.id || u.level !== 'province');
+              }
+              return [...prev, unit];
+            }
+            return [unit];
+          });
+          setShowDataPanel(true);
+        }
+      };
+      
+      const handleCommuneClick = (e: any) => {
+        if (e.features && e.features.length > 0) {
+          const feat = e.features[0];
+          const originalEvent = e.originalEvent as MouseEvent;
+          const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
+
+          setSelectedAdminUnits(prev => {
+            const unit = {
+              id: feat.properties.ten_xa,
+              name: feat.properties.ten_xa,
+              level: 'commune' as const,
+              properties: feat.properties
+            };
+            
+            if (isMultiSelect) {
+              const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
+              if (exists) {
+                return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
+              }
+              return [...prev, unit];
+            }
+            return [unit];
+          });
+          setShowDataPanel(true);
+        }
+      };
 
       if (!m.getSource(sourceId)) {
         m.addSource(sourceId, {
@@ -910,32 +976,8 @@ export default function MapInterface() {
         
         m.on('mouseenter', fillLayerId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', fillLayerId, () => { m.getCanvas().style.cursor = ''; });
-        m.on('click', fillLayerId, (e) => {
-          if (e.features && e.features.length > 0) {
-            const feat = e.features[0];
-            const originalEvent = e.originalEvent as MouseEvent;
-            const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
-
-            setSelectedAdminUnits(prev => {
-              const unit = {
-                id: feat.properties.ten_tinh,
-                name: feat.properties.ten_tinh,
-                level: 'province' as const,
-                properties: feat.properties
-              };
-              
-              if (isMultiSelect) {
-                const exists = prev.find(u => u.id === unit.id && u.level === 'province');
-                if (exists) {
-                  return prev.filter(u => u.id !== unit.id || u.level !== 'province');
-                }
-                return [...prev, unit];
-              }
-              return [unit];
-            });
-            setShowDataPanel(true);
-          }
-        });
+        m.off('click', fillLayerId, handleProvinceClick);
+        m.on('click', fillLayerId, handleProvinceClick);
       } else {
         // Update existing layer paint property
         m.setPaintProperty(fillLayerId, 'fill-color', [
@@ -1019,7 +1061,6 @@ export default function MapInterface() {
         });
       }
 
-      const communeSourceId = 'vietnam-commune-source';
       if (!m.getSource(communeSourceId)) {
          m.addSource(communeSourceId, { type: 'geojson', data: '/data/vn-communes-34.json' });
       }
@@ -1055,32 +1096,8 @@ export default function MapInterface() {
          
          m.on('mouseenter', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = 'pointer'; });
          m.on('mouseleave', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = ''; });
-         m.on('click', 'vietnam-commune-fill', (e) => {
-           if (e.features && e.features.length > 0) {
-             const feat = e.features[0];
-             const originalEvent = e.originalEvent as MouseEvent;
-             const isMultiSelect = originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey;
-
-             setSelectedAdminUnits(prev => {
-               const unit = {
-                 id: feat.properties.ten_xa,
-                 name: feat.properties.ten_xa,
-                 level: 'commune' as const,
-                 properties: feat.properties
-               };
-               
-               if (isMultiSelect) {
-                 const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
-                 if (exists) {
-                   return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
-                 }
-                 return [...prev, unit];
-               }
-               return [unit];
-             });
-             setShowDataPanel(true);
-           }
-         });
+         m.off('click', 'vietnam-commune-fill', handleCommuneClick);
+         m.on('click', 'vietnam-commune-fill', handleCommuneClick);
       } else {
          m.setPaintProperty('vietnam-commune-fill', 'fill-color', [
            'match',
@@ -3612,10 +3629,13 @@ export default function MapInterface() {
                       />
                     ))}
                   </div>
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex gap-2 pt-1 relative">
+                    <div className="w-full h-8 rounded bg-zinc-800 border-none p-0.5 flex items-center justify-center pointer-events-none">
+                      <span className="text-xs font-medium text-zinc-300">Hoặc tự chọn màu...</span>
+                    </div>
                     <input 
                       type="color" 
-                      className="w-full h-8 rounded cursor-pointer bg-zinc-800 border-none p-0.5"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) || '#0ea5e9') : '#0ea5e9'}
                       onChange={(e) => {
                          const color = e.target.value;
