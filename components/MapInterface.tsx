@@ -2013,8 +2013,11 @@ export default function MapInterface() {
     m.on('dblclick', (e) => {
       if (!m || !d) return;
       
+      const layersToQuery = ['real-routes-layer', 'real-routes-active-layer'].filter(layerId => m.getLayer(layerId));
+      if (layersToQuery.length === 0) return;
+
       const features = m.queryRenderedFeatures(e.point, {
-        layers: ['real-routes-layer', 'real-routes-active-layer']
+        layers: layersToQuery
       });
 
       if (features.length > 0) {
