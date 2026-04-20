@@ -1031,8 +1031,7 @@ export default function MapInterface() {
         m.on('mouseenter', communeFillId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', communeFillId, () => { m.getCanvas().style.cursor = ''; });
 
-        if (handleProvinceClickRef.current) m.off('click', handleProvinceClickRef.current);
-        
+        // Attached to the map globally instead of a specific layer
         handleProvinceClickRef.current = (e: any) => {
             const m = map.current;
             if (!m) return;
@@ -1086,7 +1085,8 @@ export default function MapInterface() {
             }
         };
 
-        m.on('click', handleProvinceClickRef.current);
+        // NOT attaching to the map's click event here because it's managed externally
+        // We will call it manually in the click handler if admin boundaries are visible
       } else {
         // Update existing layer paint property
         m.setPaintProperty(fillLayerId, 'fill-color', [
@@ -2378,7 +2378,17 @@ export default function MapInterface() {
     const handleUpdate = (e: any) => handleDrawUpdateRef.current(e);
     const handleDelete = () => setDrawnFeatures(d.getAll().features || []);
 
-    m.on('click', (e) => handleMapClickRef.current(e));
+    m.on('mousedown', (e: any) => {
+      // If admin boundaries are active, maybe pass it through or handle it here?
+    });
+
+    m.on('click', (e) => {
+      if (adminBoundaryRef.current && handleProvinceClickRef.current) {
+        // Manually trigger admin handler
+        handleProvinceClickRef.current(e);
+      }
+      handleMapClickRef.current(e);
+    });
 
     m.on('draw.create', handleCreate);
     m.on('draw.update', handleUpdate);
