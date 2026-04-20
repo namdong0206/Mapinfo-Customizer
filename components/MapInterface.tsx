@@ -3019,6 +3019,16 @@ export default function MapInterface() {
             >
               <Layers size={18} className="md:w-5 md:h-5" />
             </button>
+            <button 
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={cn(
+                "w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all relative shrink-0 border",
+                isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700 shadow-sm" : "bg-transparent border-transparent text-text-muted hover:bg-bg-ui"
+              )}
+              title="Chế độ Chọn vùng"
+            >
+              <span className={cn("text-[10px] font-bold", isSelectionMode ? "text-yellow-700" : "text-text-muted")}>Pick</span>
+            </button>
           </div>
         </aside>
 
