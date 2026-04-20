@@ -875,8 +875,20 @@ export default function MapInterface() {
       }
       
       handleProvinceClickRef.current = (e: any) => {
-        if (e.features && e.features.length > 0) {
-          const feat = e.features[0];
+        const m = map.current;
+        if (!m) return;
+
+        // Use a small buffer to improve touch interaction reliability
+        const features = m.queryRenderedFeatures(
+          [
+            [e.point.x - 5, e.point.y - 5],
+            [e.point.x + 5, e.point.y + 5]
+          ],
+          { layers: [fillLayerId] }
+        );
+
+        if (features && features.length > 0) {
+          const feat = features[0];
           // Check for TouchEvent vs MouseEvent safely (some browsers use originalEvent)
           const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
           const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
@@ -914,8 +926,20 @@ export default function MapInterface() {
       }
 
       handleCommuneClickRef.current = (e: any) => {
-        if (e.features && e.features.length > 0) {
-          const feat = e.features[0];
+        const m = map.current;
+        if (!m) return;
+
+        // Use a small buffer to improve touch interaction reliability
+        const features = m.queryRenderedFeatures(
+          [
+            [e.point.x - 5, e.point.y - 5],
+            [e.point.x + 5, e.point.y + 5]
+          ],
+          { layers: [communeFillId] }
+        );
+
+        if (features && features.length > 0) {
+          const feat = features[0];
           const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
           const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
           
