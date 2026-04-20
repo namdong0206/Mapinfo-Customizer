@@ -596,6 +596,7 @@ export default function MapInterface() {
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
   const prevDataCount = useRef(0);
   const prevAdminCount = useRef(0);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const currentCount = drawnFeatures.length + annotations.length;
@@ -2421,19 +2422,34 @@ export default function MapInterface() {
     // Unified map interaction handler using touchdown logic
     const handleMapInteraction = (e: any) => {
       console.log(`Global map INTERACTION (type: ${e.originalEvent?.type || 'unknown'}) triggered.`);
-      
-      // Explicitly check and trigger admin handler
-      if (adminBoundaryRef.current) {
-         if (handleProvinceClickRef.current) {
-            handleProvinceClickRef.current(e);
-         }
+      const eventType = e.originalEvent?.type || 'click';
+
+      if (eventType === 'touchstart') {
+          longPressTimerRef.current = setTimeout(() => {
+              if (adminBoundaryRef.current && handleProvinceClickRef.current) {
+                  console.log("Long press detected, triggering handleProvinceClick.");
+                  handleProvinceClickRef.current(e);
+              }
+          }, 600); // 600ms = sweet spot between 500-800ms
+      } else if (eventType === 'touchend' || eventType === 'touchmove') {
+          if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+          }
+      } else {
+          // Standard click for desktop
+          if (adminBoundaryRef.current && handleProvinceClickRef.current) {
+              handleProvinceClickRef.current(e);
+          }
       }
       
       handleMapClickRef.current(e);
     };
 
     // Use touchend for reliable interaction on mobile
+    m.on('touchstart', handleMapInteraction);
     m.on('touchend', handleMapInteraction);
+    m.on('touchmove', handleMapInteraction);
     // Keep click for desktop
     m.on('click', handleMapInteraction);
 
