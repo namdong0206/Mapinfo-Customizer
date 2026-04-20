@@ -539,6 +539,7 @@ export default function MapInterface() {
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const isSelectionModeRef = useRef(isSelectionMode);
   const [showDataPanel, setShowDataPanel] = useState(false);
   const [adminUnitColors, setAdminUnitColors] = useState<{
     provinces: Record<string, string>;
@@ -594,6 +595,10 @@ export default function MapInterface() {
   useEffect(() => {
     annotationsRef.current = annotations;
   }, [annotations]);
+  
+  useEffect(() => {
+    isSelectionModeRef.current = isSelectionMode;
+  }, [isSelectionMode]);
   
   useEffect(() => {
     is3DRef.current = is3D;
@@ -2400,8 +2405,9 @@ export default function MapInterface() {
     // Unified map interaction handler
     const handleMapInteraction = (e: any) => {
       // Only trigger if in Selection Mode
-      if (isSelectionMode && adminBoundaryRef.current && handleProvinceClickRef.current) {
-          handleProvinceClickRef.current(e);
+      if (isSelectionModeRef.current && adminBoundaryRef.current) {
+          if (handleProvinceClickRef.current) handleProvinceClickRef.current(e);
+          if (handleCommuneClickRef.current) handleCommuneClickRef.current(e);
       }
       handleMapClickRef.current(e);
     };
