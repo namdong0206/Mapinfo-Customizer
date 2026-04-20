@@ -533,7 +533,7 @@ export default function MapInterface() {
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
-  const [showDataPanel, setShowDataPanel] = useState(true);
+  const [showDataPanel, setShowDataPanel] = useState(false);
   const [adminUnitColors, setAdminUnitColors] = useState<{
     provinces: Record<string, string>;
     communes: Record<string, string>;
@@ -565,6 +565,15 @@ export default function MapInterface() {
   const mapStyleRef = useRef(mapStyleKey);
   const adminBoundaryRef = useRef(showAdminBoundaries);
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
+  const prevDataCount = useRef(0);
+
+  useEffect(() => {
+    const currentCount = drawnFeatures.length + annotations.length;
+    if (currentCount > prevDataCount.current) {
+      setShowDataPanel(true);
+    }
+    prevDataCount.current = currentCount;
+  }, [drawnFeatures.length, annotations.length]);
 
   useEffect(() => {
     annotationsRef.current = annotations;
