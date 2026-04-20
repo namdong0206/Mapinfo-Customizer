@@ -994,6 +994,9 @@ export default function MapInterface() {
       }
 
       if (!m.getLayer(fillLayerId)) {
+        // Add layer with a 'beforeId' to ensure it's rendered on top
+        const firstSymbolId = m.getStyle().layers?.find(l => l.type === 'symbol')?.id;
+
         m.addLayer({
           id: fillLayerId, type: 'fill', source: sourceId,
           paint: { 
@@ -1020,7 +1023,7 @@ export default function MapInterface() {
               ]
             ] as any
           }
-        });
+        }, firstSymbolId);
         
         m.on('mouseenter', fillLayerId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', fillLayerId, () => { m.getCanvas().style.cursor = ''; });
