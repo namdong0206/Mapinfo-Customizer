@@ -564,6 +564,8 @@ export default function MapInterface() {
   const is3DRef = useRef(is3D);
   const mapStyleRef = useRef(mapStyleKey);
   const adminBoundaryRef = useRef(showAdminBoundaries);
+  const handleProvinceClickRef = useRef<(e: any) => void>();
+  const handleCommuneClickRef = useRef<(e: any) => void>();
   const drawStateRef = useRef<any>([]); // To persist drawn features across style changes
   const prevDataCount = useRef(0);
   const prevAdminCount = useRef(0);
@@ -868,7 +870,11 @@ export default function MapInterface() {
       const communeFillId = 'vietnam-commune-fill';
       const communeLineId = 'vietnam-commune-line';
 
-      const handleProvinceClick = (e: any) => {
+      if (handleProvinceClickRef.current) {
+        m.off('click', fillLayerId, handleProvinceClickRef.current);
+      }
+      
+      handleProvinceClickRef.current = (e: any) => {
         if (e.features && e.features.length > 0) {
           const feat = e.features[0];
           const originalEvent = e.originalEvent as MouseEvent;
@@ -895,7 +901,11 @@ export default function MapInterface() {
         }
       };
       
-      const handleCommuneClick = (e: any) => {
+      if (handleCommuneClickRef.current) {
+        m.off('click', communeFillId, handleCommuneClickRef.current);
+      }
+
+      handleCommuneClickRef.current = (e: any) => {
         if (e.features && e.features.length > 0) {
           const feat = e.features[0];
           const originalEvent = e.originalEvent as MouseEvent;
@@ -976,8 +986,7 @@ export default function MapInterface() {
         
         m.on('mouseenter', fillLayerId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', fillLayerId, () => { m.getCanvas().style.cursor = ''; });
-        m.off('click', fillLayerId, handleProvinceClick);
-        m.on('click', fillLayerId, handleProvinceClick);
+        m.on('click', fillLayerId, handleProvinceClickRef.current!);
       } else {
         // Update existing layer paint property
         m.setPaintProperty(fillLayerId, 'fill-color', [
@@ -1096,8 +1105,7 @@ export default function MapInterface() {
          
          m.on('mouseenter', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = 'pointer'; });
          m.on('mouseleave', 'vietnam-commune-fill', () => { m.getCanvas().style.cursor = ''; });
-         m.off('click', 'vietnam-commune-fill', handleCommuneClick);
-         m.on('click', 'vietnam-commune-fill', handleCommuneClick);
+         m.on('click', 'vietnam-commune-fill', handleCommuneClickRef.current!);
       } else {
          m.setPaintProperty('vietnam-commune-fill', 'fill-color', [
            'match',
@@ -2779,10 +2787,10 @@ export default function MapInterface() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+      <main className="flex flex-col landscape:flex-row md:flex-row flex-1 overflow-hidden relative">
         {/* Sidebar Tool Selection */}
-        <aside className="w-full h-[52px] md:w-16 md:h-full bg-white border-b md:border-b-0 md:border-r border-border-main flex flex-row md:flex-col items-center py-1.5 px-2 md:py-5 md:px-0 gap-2 md:gap-4 z-20 shrink-0 relative overflow-x-auto overflow-y-hidden md:overflow-y-auto md:overflow-x-visible custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex flex-row md:flex-col items-center gap-1.5 md:gap-4 flex-1 pb-0 pr-2 md:pb-4 md:pr-0 shrink-0 h-full w-max md:w-full">
+        <aside className="w-full h-[52px] landscape:w-16 landscape:h-full md:w-16 md:h-full bg-white border-b landscape:border-b-0 landscape:border-r md:border-b-0 md:border-r border-border-main flex flex-row landscape:flex-col md:flex-col items-center py-1.5 px-2 landscape:py-5 landscape:px-0 md:py-5 md:px-0 gap-2 md:gap-4 z-20 shrink-0 relative overflow-x-auto overflow-y-hidden landscape:overflow-y-auto landscape:overflow-x-visible md:overflow-y-auto md:overflow-x-visible custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-row landscape:flex-col md:flex-col items-center gap-1.5 md:gap-4 flex-1 pb-0 pr-2 landscape:pb-4 landscape:pr-0 md:pb-4 md:pr-0 shrink-0 h-full w-max landscape:w-full md:w-full">
             <ToolButton 
               active={activeMode === 'draw_polygon'} 
               onClick={() => toggleDrawMode('draw_polygon')}
@@ -2823,7 +2831,7 @@ export default function MapInterface() {
               label="Tạo chỉ đường" 
             />
             
-            <div className="w-px h-6 md:h-px md:w-8 bg-border-main mx-1 md:my-2 shrink-0" />
+            <div className="w-px h-6 landscape:h-px landscape:w-8 md:h-px md:w-8 bg-border-main mx-1 landscape:my-2 md:my-2 shrink-0" />
             
             <button 
               onClick={() => setRouteType(t => t === 'straight' ? 'real' : 'straight')}
@@ -2838,7 +2846,7 @@ export default function MapInterface() {
             </button>
 
             {routeType === 'real' && (
-              <div className="flex flex-row md:flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main items-center shrink-0">
+              <div className="flex flex-row landscape:flex-col md:flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main items-center shrink-0">
                 <button 
                   onClick={() => setTravelMode('driving')} 
                   className={cn("p-1.5 md:p-1.5 rounded-md transition-all shrink-0", travelMode === 'driving' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
@@ -2864,7 +2872,7 @@ export default function MapInterface() {
             )}
           </div>
 
-          <div className="ml-auto md:mt-auto md:ml-0 flex flex-row md:flex-col items-center gap-1.5 md:gap-4 mb-0 md:mb-2 mr-0 md:mr-0 shrink-0 relative">
+          <div className="ml-auto landscape:mt-auto landscape:ml-0 md:mt-auto md:ml-0 flex flex-row landscape:flex-col md:flex-col items-center gap-1.5 md:gap-4 mb-0 md:mb-2 md:mr-0 shrink-0 relative">
             <button 
               ref={layerButtonRef}
               onClick={() => setShowLayerPicker(!showLayerPicker)}
@@ -2888,7 +2896,7 @@ export default function MapInterface() {
               animate={{ opacity: 1, x: 0, y: 0 }}
               exit={{ opacity: 0, x: -10, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-2 top-14 md:top-auto md:left-16 md:right-auto md:bottom-2 w-[calc(100vw-32px)] max-w-[260px] md:max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[100] flex flex-col gap-1 w-64"
+              className="absolute right-2 top-14 landscape:top-auto landscape:left-16 landscape:right-auto landscape:bottom-2 md:top-auto md:left-16 md:right-auto md:bottom-2 w-[calc(100vw-32px)] max-w-[260px] md:max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[100] flex flex-col gap-1 w-64"
             >
               <div className="px-2 py-1 flex items-center justify-between mb-1">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Bản đồ nền</span>
@@ -3548,7 +3556,7 @@ export default function MapInterface() {
               animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="flex w-[280px] sm:w-[320px] lg:w-[280px] bg-white border-l border-border-main flex-col z-40 shrink-0 overflow-hidden absolute right-0 top-[52px] h-[calc(100%-52px)] md:top-0 md:h-full lg:relative lg:h-auto shadow-2xl lg:shadow-none"
+              className="flex w-[280px] sm:w-[320px] lg:w-[280px] bg-white border-l border-border-main flex-col z-40 shrink-0 overflow-hidden absolute right-0 top-[52px] h-[calc(100%-52px)] landscape:top-0 landscape:h-full md:top-0 md:h-full lg:relative lg:h-auto shadow-2xl lg:shadow-none"
             >
               <div className="p-3 md:p-4 border-b border-border-main flex items-center justify-between">
                 <h2 className="text-sm font-semibold truncate">Lớp dữ liệu ({drawnFeatures.length + annotations.length})</h2>
@@ -3635,7 +3643,7 @@ export default function MapInterface() {
                     </div>
                     <input 
                       type="color" 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                       value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) || '#0ea5e9') : '#0ea5e9'}
                       onChange={(e) => {
                          const color = e.target.value;
