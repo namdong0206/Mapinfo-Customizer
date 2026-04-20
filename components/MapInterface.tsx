@@ -2418,11 +2418,19 @@ export default function MapInterface() {
       // If admin boundaries are active, maybe pass it through or handle it here?
     });
 
-    // Global map click handler
+    // Track map click event
     m.on('click', (e) => {
-      console.log("Global map click triggered.");
-      
-      // Explicitly check and trigger admin handler
+      console.log("Global map CLICK event triggered.");
+      // ... same logic ...
+    });
+
+    // Track map touch event as diagnostic
+    m.on('touchstart', (e: any) => {
+      console.log("Global map TOUCHSTART event triggered.");
+    });
+
+    // Explicitly check and trigger admin handler within CLICK
+    m.on('click', (e) => {
       if (adminBoundaryRef.current) {
          console.log("Admin boundaries active, triggering handleProvinceClick.");
          if (handleProvinceClickRef.current) {
@@ -2431,7 +2439,6 @@ export default function MapInterface() {
             console.log("handleProvinceClickRef is null.");
          }
       }
-      
       handleMapClickRef.current(e);
     });
 
