@@ -2729,20 +2729,20 @@ export default function MapInterface() {
   return (
     <div className="flex flex-col h-screen w-full bg-bg-ui text-text-main overflow-hidden">
       {/* Header Area */}
-      <header className="h-auto md:h-[60px] py-2 md:py-0 bg-white border-b border-border-main flex flex-wrap items-center px-3 md:px-5 justify-between z-30 shadow-sm shrink-0 gap-y-2">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold shadow-sm shrink-0">
+      <header className="h-[50px] md:h-[60px] py-0 bg-white border-b border-border-main flex items-center px-2 md:px-5 justify-between z-30 shadow-sm shrink-0 gap-2 md:gap-4 flex-nowrap w-full">
+        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+          <div className="w-7 h-7 md:w-8 md:h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold shadow-sm shrink-0 text-sm md:text-base">
             M
           </div>
-          <h1 className="text-base md:text-lg font-semibold tracking-tight hidden sm:block">MapInfo Customizer</h1>
+          <h1 className="text-sm md:text-lg font-semibold tracking-tight hidden md:block">MapInfo Customizer</h1>
         </div>
         
-        <div className="order-last w-full md:order-none md:w-[350px] lg:w-[400px] flex items-center bg-bg-ui border border-border-main rounded-lg px-3 py-1.5 gap-2">
-          <Search size={16} className="text-text-muted shrink-0" />
+        <div className="flex-1 w-full max-w-[500px] flex items-center bg-bg-ui border border-border-main rounded-lg px-2 md:px-3 py-1.5 md:py-1.5 gap-2 shrink truncate">
+          <Search size={16} className="text-text-muted shrink-0 w-4 h-4 md:w-4 md:h-4" />
           <input 
             type="text" 
-            placeholder="Tìm kiếm địa điểm..." 
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-text-muted/60"
+            placeholder="Tìm địa điểm..." 
+            className="bg-transparent border-none outline-none text-[13px] md:text-sm w-full placeholder:text-text-muted/60 min-w-0"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSearch(e.currentTarget.value);
@@ -2751,49 +2751,49 @@ export default function MapInterface() {
           />
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
-          <button className="px-2 md:px-3 py-1.5 bg-white border border-border-main rounded-md text-xs font-medium hover:bg-zinc-50 transition-colors">
-            Nhập<span className="hidden sm:inline"> dữ liệu</span>
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <button className="hidden sm:block px-3 py-1.5 bg-white border border-border-main rounded-md text-xs font-medium hover:bg-zinc-50 transition-colors">
+            Nhập dữ liệu
           </button>
-          <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-200 border-2 border-white shadow-sm overflow-hidden relative shrink-0">
+          <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-zinc-200 border-2 border-white shadow-sm overflow-hidden relative shrink-0">
             <Image src="https://picsum.photos/seed/user/100/100" alt="User" fill referrerPolicy="no-referrer" />
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex flex-1 overflow-hidden relative">
+      <main className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
         {/* Sidebar Tool Selection */}
-        <aside className="w-16 bg-white border-r border-border-main flex flex-col items-center py-5 gap-4 z-20 shrink-0 h-full relative">
-          <div className="flex flex-col items-center gap-4 overflow-y-auto overflow-x-visible custom-scrollbar w-full flex-1 pb-4">
+        <aside className="w-full h-[52px] md:w-16 md:h-full bg-white border-b md:border-b-0 md:border-r border-border-main flex flex-row md:flex-col items-center py-1.5 px-2 md:py-5 md:px-0 gap-2 md:gap-4 z-20 shrink-0 relative overflow-x-auto overflow-y-hidden md:overflow-y-auto md:overflow-x-visible custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-row md:flex-col items-center gap-1.5 md:gap-4 flex-1 pb-0 pr-2 md:pb-4 md:pr-0 shrink-0 h-full w-max md:w-full">
             <ToolButton 
               active={activeMode === 'draw_polygon'} 
               onClick={() => toggleDrawMode('draw_polygon')}
-              icon={<Square size={20} />} 
+              icon={<Square size={18} className="md:w-5 md:h-5" />} 
               label="Square"
             />
             <ToolButton 
               active={activeMode === 'draw_line'} 
               onClick={() => toggleDrawMode('draw_line')}
-              icon={<Route size={20} />} 
+              icon={<Route size={18} className="md:w-5 md:h-5" />} 
               label="Line"
             />
             <ToolButton 
               active={activeMode === 'annotate'} 
               onClick={() => toggleDrawMode('annotate')}
-              icon={<Info size={20} />} 
+              icon={<Info size={18} className="md:w-5 md:h-5" />} 
               label="Ghi chú" 
             />
             <ToolButton 
               active={activeMode === 'image'} 
               onClick={() => toggleDrawMode('image')} 
-              icon={<Download size={20} className="rotate-180" />} 
+              icon={<Download size={18} className="md:w-5 md:h-5 rotate-180" />} 
               label="Chèn ảnh" 
             />
             <ToolButton 
               active={activeMode === 'icon'} 
               onClick={() => toggleDrawMode('icon')} 
-              icon={<MapPin size={20} />} 
+              icon={<MapPin size={18} className="md:w-5 md:h-5" />} 
               label="Chèn biểu tượng" 
             />
             <ToolButton 
@@ -2802,148 +2802,149 @@ export default function MapInterface() {
                 toggleDrawMode('routing');
                 setRoutingFocus('start');
               }} 
-              icon={<Navigation size={20} />} 
+              icon={<Navigation size={18} className="md:w-5 md:h-5" />} 
               label="Tạo chỉ đường" 
             />
             
-            <div className="h-px w-8 bg-border-main my-2 shrink-0" />
+            <div className="w-px h-6 md:h-px md:w-8 bg-border-main mx-1 md:my-2 shrink-0" />
             
             <button 
               onClick={() => setRouteType(t => t === 'straight' ? 'real' : 'straight')}
               className={cn(
-                "w-10 h-10 rounded-lg transition-all flex flex-col items-center justify-center gap-1 shrink-0",
+                "w-9 h-9 md:w-10 md:h-10 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 md:gap-1 shrink-0",
                 routeType === 'real' ? "bg-blue-50 text-accent ring-1 ring-blue-200" : "bg-zinc-50 text-text-muted hover:bg-zinc-100"
               )}
               title={routeType === 'real' ? "Đang dùng đường thực" : "Đang dùng đường tuyến tính"}
             >
-              <Route size={18} />
-              <span className="text-[9px] font-bold uppercase tracking-tight leading-none">{routeType === 'real' ? 'Real' : 'Air'}</span>
+              <Route size={16} className="md:w-[18px] md:h-[18px]" />
+              <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-tight leading-none">{routeType === 'real' ? 'Real' : 'Air'}</span>
             </button>
 
             {routeType === 'real' && (
-              <div className="flex flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main w-10 items-center shrink-0">
+              <div className="flex flex-row md:flex-col gap-1 p-1 bg-zinc-50 rounded-lg border border-border-main items-center shrink-0">
                 <button 
                   onClick={() => setTravelMode('driving')} 
-                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'driving' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  className={cn("p-1.5 md:p-1.5 rounded-md transition-all shrink-0", travelMode === 'driving' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
                   title="Ô-tô"
                 >
-                  <Car size={16} />
+                  <Car size={14} className="md:w-4 md:h-4" />
                 </button>
                 <button 
                   onClick={() => setTravelMode('motorbike')} 
-                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'motorbike' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  className={cn("p-1.5 md:p-1.5 rounded-md transition-all shrink-0", travelMode === 'motorbike' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
                   title="Xe máy"
                 >
-                  <Bike size={16} />
+                  <Bike size={14} className="md:w-4 md:h-4" />
                 </button>
                 <button 
                   onClick={() => setTravelMode('walking')} 
-                  className={cn("p-1.5 rounded-md transition-all", travelMode === 'walking' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
+                  className={cn("p-1.5 md:p-1.5 rounded-md transition-all shrink-0", travelMode === 'walking' ? "bg-white shadow-sm text-accent" : "text-text-muted hover:text-text-main")} 
                   title="Đi bộ"
                 >
-                  <Footprints size={16} />
+                  <Footprints size={14} className="md:w-4 md:h-4" />
                 </button>
               </div>
             )}
           </div>
 
-          <div className="mt-auto flex flex-col gap-4 mb-2 relative">
+          <div className="ml-auto md:mt-auto md:ml-0 flex flex-row md:flex-col items-center gap-1.5 md:gap-4 mb-0 md:mb-2 mr-0 md:mr-0 shrink-0 relative">
             <button 
               ref={layerButtonRef}
               onClick={() => setShowLayerPicker(!showLayerPicker)}
               className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-all relative",
+                "w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all relative shrink-0",
                 showLayerPicker ? "bg-blue-50 text-accent border border-blue-200 shadow-sm" : "bg-transparent text-text-muted hover:bg-bg-ui"
               )}
               title="Lớp bản đồ"
             >
-              <Layers size={20} />
+              <Layers size={18} className="md:w-5 md:h-5" />
             </button>
-            
-            <AnimatePresence>
-              {showLayerPicker && (
-                <motion.div 
-                  ref={layerPickerRef}
-                  initial={{ opacity: 0, x: -10, y: 10 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: -10, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute left-full ml-3 bottom-0 w-[calc(100vw-80px)] max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[100] flex flex-col gap-1 md:w-64"
-                >
-                  <div className="px-2 py-1 flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Bản đồ nền</span>
-                    <button 
-                       onClick={toggle3D}
-                       className={cn("text-[10px] px-2 py-0.5 rounded font-bold transition-colors", is3D ? "bg-accent text-white" : "bg-zinc-100 text-text-muted hover:bg-zinc-200")}
-                    >
-                      3D
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 p-1 max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {Object.entries(MAP_STYLES).map(([key, style]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                           if (!map.current) return;
-                           const currentCenter = map.current.getCenter();
-                           const currentZoom = map.current.getZoom();
-                           const currentPitch = map.current.getPitch();
-                           const currentBearing = map.current.getBearing();
-                           
-                           setMapStyleKey(key);
-                           map.current.setStyle(style.url);
-                           
-                           // Explicitly re-apply camera settings after style load to prevent jumps
-                           map.current.once('style.load', () => {
-                             map.current?.jumpTo({
-                                center: currentCenter,
-                                zoom: currentZoom,
-                                pitch: currentPitch,
-                                bearing: currentBearing
-                              });
-                           });
-                           
-                           setShowLayerPicker(false);
-                        }}
-                        className={cn(
-                          "text-[11px] px-2 py-2 rounded-lg text-left transition-all border col-span-1 leading-tight flex flex-col gap-0.5 min-h-[44px]",
-                          mapStyleKey === key ? "bg-blue-50 border-blue-200 text-accent shadow-sm" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
-                        )}
-                      >
-                        <span className="font-bold line-clamp-1">{style.label}</span>
-                        <span className="text-[8px] opacity-60 uppercase tracking-tighter">
-                          {style.category === 'vector' ? 'Vector' : 'Raster'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="h-px bg-border-main my-1" />
-                  
-                  <div className="px-2 py-1 flex items-center justify-between mt-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Lớp hiển thị</span>
-                  </div>
-                  <div className="px-1 pb-1">
-                    <button
-                      onClick={() => setShowAdminBoundaries(!showAdminBoundaries)}
-                      className={cn(
-                        "w-full text-[11px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
-                        showAdminBoundaries ? "bg-cyan-50 border-cyan-200 text-cyan-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
-                      )}
-                    >
-                      <span className="flex items-center gap-2">
-                        Ranh giới hành chính VN
-                      </span>
-                      <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center", showAdminBoundaries ? "bg-cyan-500 border-cyan-500 text-white" : "border-border-main bg-white")}>
-                        {showAdminBoundaries && <Check size={10} />}
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </aside>
+
+        {/* Global Layer Picker floating in Main to avoid clipping by sidebar's overflow-x-auto */}
+        <AnimatePresence>
+          {showLayerPicker && (
+            <motion.div 
+              ref={layerPickerRef}
+              initial={{ opacity: 0, x: -10, y: 10 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0, x: -10, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-2 top-14 md:top-auto md:left-16 md:right-auto md:bottom-2 w-[calc(100vw-32px)] max-w-[260px] md:max-w-64 bg-white border border-border-main rounded-xl shadow-panel p-2 z-[100] flex flex-col gap-1 w-64"
+            >
+              <div className="px-2 py-1 flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Bản đồ nền</span>
+                <button 
+                   onClick={toggle3D}
+                   className={cn("text-[10px] px-2 py-0.5 rounded font-bold transition-colors", is3D ? "bg-accent text-white" : "bg-zinc-100 text-text-muted hover:bg-zinc-200")}
+                >
+                  3D
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1 p-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {Object.entries(MAP_STYLES).map(([key, style]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                       if (!map.current) return;
+                       const currentCenter = map.current.getCenter();
+                       const currentZoom = map.current.getZoom();
+                       const currentPitch = map.current.getPitch();
+                       const currentBearing = map.current.getBearing();
+                       
+                       setMapStyleKey(key);
+                       map.current.setStyle(style.url);
+                       
+                       // Explicitly re-apply camera settings after style load to prevent jumps
+                       map.current.once('style.load', () => {
+                         map.current?.jumpTo({
+                            center: currentCenter,
+                            zoom: currentZoom,
+                            pitch: currentPitch,
+                            bearing: currentBearing
+                          });
+                       });
+                       
+                       setShowLayerPicker(false);
+                    }}
+                    className={cn(
+                      "text-[11px] px-2 py-2 rounded-lg text-left transition-all border col-span-1 leading-tight flex flex-col gap-0.5 min-h-[44px]",
+                      mapStyleKey === key ? "bg-blue-50 border-blue-200 text-accent shadow-sm" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
+                    )}
+                  >
+                    <span className="font-bold line-clamp-1">{style.label}</span>
+                    <span className="text-[8px] opacity-60 uppercase tracking-tighter">
+                      {style.category === 'vector' ? 'Vector' : 'Raster'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="h-px bg-border-main my-1" />
+              
+              <div className="px-2 py-1 flex items-center justify-between mt-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Lớp hiển thị</span>
+              </div>
+              <div className="px-1 pb-1">
+                <button
+                  onClick={() => setShowAdminBoundaries(!showAdminBoundaries)}
+                  className={cn(
+                    "w-full text-[11px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
+                    showAdminBoundaries ? "bg-cyan-50 border-cyan-200 text-cyan-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    Ranh giới hành chính VN
+                  </span>
+                  <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center", showAdminBoundaries ? "bg-cyan-500 border-cyan-500 text-white" : "border-border-main bg-white")}>
+                    {showAdminBoundaries && <Check size={10} />}
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Map Center Area */}
         <section className="flex-1 relative bg-zinc-200 overflow-hidden">
@@ -4171,14 +4172,14 @@ function ToolButton({ active, onClick, icon, label }: { active: boolean; onClick
     <button 
       onClick={onClick}
       className={cn(
-        "w-10 h-10 rounded-lg flex items-center justify-center transition-all group relative",
+        "w-10 h-10 rounded-lg flex items-center justify-center transition-all group relative shrink-0",
         active ? "bg-blue-50 text-accent border border-blue-200 shadow-sm" : "bg-transparent text-text-muted hover:bg-bg-ui"
       )}
       title={label}
     >
       {icon}
       {!active && (
-        <div className="absolute left-full ml-3 px-2 py-1 bg-text-main text-white text-[10px] rounded opacity-0 lg:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-md">
+        <div className="absolute left-full md:left-full top-auto mt-0 ml-3 px-2 py-1 bg-text-main text-white text-[10px] rounded opacity-0 lg:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-md">
           {label}
         </div>
       )}
