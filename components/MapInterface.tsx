@@ -62,6 +62,27 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Security and Utility Helpers
+function escapeHtml(unsafe: string) {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+const searchPhoton = async (query: string, limit: number = 10) => {
+  const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${limit}`);
+  return await resp.json();
+};
+
+const reverseGeocodePhoton = async (lng: number, lat: number) => {
+  const resp = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`);
+  return await resp.json();
+};
+
 // Map styles optimized for performance and visual clarity
 const MAP_STYLES: Record<string, { label: string, url: any, category: 'vector' | 'raster' }> = {
   STREETS: { 
@@ -491,20 +512,26 @@ export default function MapInterface() {
   
   const [activeMode, setActiveMode] = useState<'view' | 'draw_polygon' | 'draw_line' | 'annotate' | 'image' | 'icon' | 'routing'>('view');
   const activeModeRef = useRef(activeMode);
+  const [coords, setCoords] = useState({ lng: 105.8342, lat: 21.0278 });
   const [routeType, setRouteType] = useState<'straight' | 'real'>('straight');
   const [travelMode, setTravelMode] = useState<'driving' | 'motorbike' | 'walking'>('driving');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
-  useEffect(() => {
-    // No VConsole init here
-  }, []);
+  // Mousemove Throttling
+  const lastMouseMoveUpdate = useRef(0);
+  const handleMouseMove = useCallback((e: any) => {
+    const now = Date.now();
+    if (now - lastMouseMoveUpdate.current > 100) {
+      setCoords({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      lastMouseMoveUpdate.current = now;
+    }
+  }, [setCoords]);
 
   const annotationsRef = useRef<Annotation[]>([]);
   const markerInstances = useRef<Record<string, maplibregl.Marker>>({});
   
   const [isExporting, setIsExporting] = useState(false);
   const [drawnFeatures, setDrawnFeatures] = useState<any[]>([]);
-  const [coords, setCoords] = useState({ lng: 105.8342, lat: 21.0278 });
   const [mapStyleKey, setMapStyleKey] = useState<string>('STREETS');
   const [showLayerPicker, setShowLayerPicker] = useState(false);
   const [assetModal, setAssetModal] = useState<{ 
@@ -534,6 +561,8 @@ export default function MapInterface() {
     isUploading: false,
     editId: null
   });
+
+  const setupCustomLayersRef = useRef<() => void>(() => {});
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
@@ -1341,6 +1370,10 @@ export default function MapInterface() {
   }, [updateBuildings3D, adminUnitColors, adminUnitOpacities, selectedAdminUnits, showAdminBoundaries]);
 
   useEffect(() => {
+    setupCustomLayersRef.current = setupCustomLayers;
+  }, [setupCustomLayers]);
+
+  useEffect(() => {
     if (!map.current) return;
     setupCustomLayers();
   }, [showAdminBoundaries, is3D, setupCustomLayers, adminUnitColors, adminUnitOpacities, selectedAdminUnits]);
@@ -1378,7 +1411,7 @@ export default function MapInterface() {
               <div class="p-1 bg-white rounded-lg shadow-xl border-2 border-white overflow-hidden ring-1 ring-black/10 transition-transform active:scale-95">
                 <img src="${ann.imageUrl}" style="width: ${size}px; height: auto; display: block; border-radius: 4px;" referrerPolicy="no-referrer" />
               </div>
-              <span style="${textStyle}">${ann.text || ''}</span>
+              <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
             </div>
           `;
         } else if (ann.icon) {
@@ -1395,7 +1428,7 @@ export default function MapInterface() {
                     <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Fire/3D/fire_3d.png" 
                          class="absolute bottom-0 w-8 h-8 object-contain ${animClass}" />
                   </div>
-                  <span style="${textStyle}">${ann.text || ''}</span>
+                  <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
                 </div>
               `;
             }
@@ -1406,7 +1439,7 @@ export default function MapInterface() {
                   <div class="absolute inset-0 bg-blue-400/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <img src="${iconData?.url}" class="w-12 h-12 object-contain relative z-10 ${animClass}" style="filter: drop-shadow(0 10px 8px rgba(0,0,0,0.2));" />
                 </div>
-                <span style="${textStyle}">${ann.text || ''}</span>
+                <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
               </div>
             `;
           }
@@ -1416,14 +1449,14 @@ export default function MapInterface() {
               <div style="background: white; padding: 10px; border-radius: 999px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15); border: 3px solid #3b82f6; display: flex; align-items: center; justify-content: center; transform: scale(1.1);" class="transition-transform active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
               </div>
-              <span style="${textStyle}">${ann.text || ''}</span>
+              <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
             </div>
           `;
         } else {
           return `
             <div class="flex flex-col items-center gap-1">
               <div class="px-3 py-1.5 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transition-all active:scale-95" style="background: ${ann.bgColor || '#3b82f6'}">
-                <span class="text-white text-xs font-bold leading-none">${ann.text}</span>
+                <span class="text-white text-xs font-bold leading-none">${escapeHtml(ann.text)}</span>
               </div>
             </div>
           `;
@@ -1433,7 +1466,7 @@ export default function MapInterface() {
       const getPopupContent = () => `
         <div class="p-4 min-w-[200px] font-sans bg-white/95 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden border border-zinc-100">
           ${ann.imageUrl ? `<img src="${ann.imageUrl}" class="w-full h-auto rounded-lg mb-3 shadow-md border border-zinc-200" alt="Annotation" referrerPolicy="no-referrer" />` : ''}
-          <h4 class="text-sm font-bold text-zinc-900 leading-tight mb-1">${ann.text}</h4>
+          <h4 class="text-sm font-bold text-zinc-900 leading-tight mb-1">${escapeHtml(ann.text)}</h4>
           <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Lớp nội dung</p>
         </div>
       `;
@@ -1664,7 +1697,7 @@ export default function MapInterface() {
         }
       }
     }
-  }, []);
+  }, [setCoords]);
 
   const handleDrawCreate = useCallback(async (e: any) => {
     const d = draw.current;
@@ -2100,11 +2133,12 @@ export default function MapInterface() {
     const forceEnableInteractions = () => {
       if (!m) return;
       try {
-        m.dragRotate.enable();
-        m.touchZoomRotate.enable();
-        m.touchPitch.enable();
+        if (!m.dragRotate.isEnabled()) m.dragRotate.enable();
+        if (!m.touchZoomRotate.isEnabled()) m.touchZoomRotate.enable();
+        if (!m.touchPitch.isEnabled()) m.touchPitch.enable();
         // @ts-ignore
-        if (m.touchRotate) m.touchRotate.enable();
+        if (m.touchRotate && !m.touchRotate.isEnabled()) m.touchRotate.enable();
+        if (!m.keyboard.isEnabled()) m.keyboard.enable();
       } catch (e) {
         console.warn('Map interaction enable failed:', e);
       }
@@ -2113,7 +2147,7 @@ export default function MapInterface() {
     m.on('style.load', () => {
       patchMap(m);
       forceEnableInteractions();
-      setupCustomLayers();
+      if (setupCustomLayersRef.current) setupCustomLayersRef.current();
       
       // Patch Draw modes directly to prevent them from disabling rotation
       const drawInstance = draw.current as any;
@@ -2133,17 +2167,7 @@ export default function MapInterface() {
       }
     });
 
-    m.on('render', () => {
-      // Extremely aggressive interaction enforcement
-      if (m) {
-        if (!m.dragRotate.isEnabled()) m.dragRotate.enable();
-        if (!m.touchZoomRotate.isEnabled()) m.touchZoomRotate.enable();
-        if (!m.touchPitch.isEnabled()) m.touchPitch.enable();
-        // @ts-ignore
-        if (m.touchRotate && !m.touchRotate.isEnabled()) m.touchRotate.enable();
-        if (!m.keyboard.isEnabled()) m.keyboard.enable();
-      }
-    });
+    m.on('render', forceEnableInteractions);
 
     // Additional event-based forcing to counteract Draw's internal state machine
     const forceEnable = () => {
@@ -2259,9 +2283,7 @@ export default function MapInterface() {
       forwardGeocode: async (config: any) => {
         const features = [];
         try {
-          const request = `https://photon.komoot.io/api/?q=${encodeURIComponent(config.query)}&limit=1`;
-          const response = await fetch(request);
-          const geojson = await response.json();
+          const geojson = await searchPhoton(config.query, 5);
           for (const feature of geojson.features) {
             const center = feature.geometry.coordinates;
             const p = feature.properties;
@@ -2441,9 +2463,7 @@ export default function MapInterface() {
       }
     });
 
-    m.on('mousemove', (e: any) => {
-      setCoords({ lng: e.lngLat.lng, lat: e.lngLat.lat });
-    });
+    m.on('mousemove', handleMouseMove);
 
     m.on('dragstart', () => {
       setAnimatingFeatures(prev => {
@@ -2743,8 +2763,7 @@ export default function MapInterface() {
       try {
          setIsSearching(true);
          // Reverse geocoding
-         const resp = await fetch(`https://photon.komoot.io/reverse?lon=${lngLat[0]}&lat=${lngLat[1]}`);
-         const data = await resp.json();
+         const data = await reverseGeocodePhoton(lngLat[0], lngLat[1]);
          const address = data.features?.[0]?.properties?.name || data.features?.[0]?.properties?.street || query;
          
          if (routingFocusRef.current === 'start') {
@@ -3267,8 +3286,7 @@ export default function MapInterface() {
                       let end = routingEnd.coords;
                       
                       const geocode = async (q: string) => {
-                         const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
-                         const json = await res.json();
+                         const json = await searchPhoton(q, 1);
                          if (json.features?.length > 0) return json.features[0].geometry.coordinates as [number, number];
                          return null;
                       };
@@ -3415,8 +3433,7 @@ export default function MapInterface() {
                               if (!q || isSearching) return;
                               setIsSearching(true);
                               try {
-                                const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
-                                const data = await resp.json();
+                                const data = await searchPhoton(q, 1);
                                 if (data.features && data.features.length > 0) {
                                   const coords = data.features[0].geometry.coordinates;
                                   executeConnection(coords as [number, number], routeType);
@@ -3490,8 +3507,7 @@ export default function MapInterface() {
                         if (!searchQuery || isSearching) return;
                         setIsSearching(true);
                         try {
-                          const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`);
-                          const data = await resp.json();
+                          const data = await searchPhoton(searchQuery, 1);
                           if (data.features && data.features.length > 0) {
                             const coords = data.features[0].geometry.coordinates;
                             executeConnection(coords as [number, number], routeType);

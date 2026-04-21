@@ -36,8 +36,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "tailwind-merge": "^3.3.1",
-    "unzipper": "^0.12.3",
-    "vconsole": "^3.15.1"
+    "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.11",
