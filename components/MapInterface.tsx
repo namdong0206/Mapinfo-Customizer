@@ -3814,27 +3814,29 @@ export default function MapInterface() {
                       />
                     ))}
                   </div>
-                  <div className="flex gap-2 pt-1 relative">
-                    <div className="w-full h-8 rounded bg-zinc-800 border-none p-0.5 flex items-center justify-center pointer-events-none">
-                      <span className="text-xs font-medium text-zinc-300">Hoặc tự chọn màu...</span>
-                    </div>
-                    <input 
-                      type="color" 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                      value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) || '#0ea5e9') : '#0ea5e9'}
-                      onChange={(e) => {
-                         const color = e.target.value;
-                         setAdminUnitColors(prev => {
-                            const nextProvinces = { ...prev.provinces };
-                            const nextCommunes = { ...prev.communes };
-                            selectedAdminUnits.forEach(unit => {
-                              if (unit.level === 'province') nextProvinces[unit.id] = color;
-                              else nextCommunes[unit.id] = color;
+                  <div className="flex gap-2 pt-1">
+                    <div className="flex-1 relative overflow-hidden rounded group">
+                      <div className="w-full h-8 rounded bg-zinc-800 border-none p-0.5 flex items-center justify-center pointer-events-none group-hover:bg-zinc-700 transition-colors">
+                        <span className="text-xs font-medium text-zinc-300">Hoặc tự chọn màu...</span>
+                      </div>
+                      <input 
+                        type="color" 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
+                        value={selectedAdminUnits.length === 1 ? ((selectedAdminUnits[0].level === 'province' ? adminUnitColors.provinces[selectedAdminUnits[0].id] : adminUnitColors.communes[selectedAdminUnits[0].id]) || '#0ea5e9') : '#0ea5e9'}
+                        onChange={(e) => {
+                          const color = e.target.value;
+                          setAdminUnitColors(prev => {
+                              const nextProvinces = { ...prev.provinces };
+                              const nextCommunes = { ...prev.communes };
+                              selectedAdminUnits.forEach(unit => {
+                                if (unit.level === 'province') nextProvinces[unit.id] = color;
+                                else nextCommunes[unit.id] = color;
+                              });
+                              return { provinces: nextProvinces, communes: nextCommunes };
                             });
-                            return { provinces: nextProvinces, communes: nextCommunes };
-                          });
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
                     <button 
                       onClick={() => {
                         setAdminUnitColors(prev => {
@@ -3847,7 +3849,7 @@ export default function MapInterface() {
                           return { provinces: nextProvinces, communes: nextCommunes };
                         });
                       }}
-                      className="px-2 bg-zinc-800 text-zinc-400 hover:text-white rounded transition-colors"
+                      className="w-10 h-8 flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded transition-colors relative z-10"
                       title="Xóa màu"
                     >
                       <Trash2 size={14} />
