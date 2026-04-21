@@ -567,6 +567,7 @@ export default function MapInterface() {
   const [isLinkingMode, setIsLinkingMode] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [showAdminBoundaries, setShowAdminBoundaries] = useState(false);
+  const [showProvinceLabels, setShowProvinceLabels] = useState(true);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const isSelectionModeRef = useRef(isSelectionMode);
   const [showDataPanel, setShowDataPanel] = useState(false);
@@ -1224,7 +1225,8 @@ export default function MapInterface() {
             ],
             'text-anchor': 'center',
             'text-allow-overlap': true,
-            'text-ignore-placement': true
+            'text-ignore-placement': true,
+            'visibility': showProvinceLabels ? 'visible' : 'none'
           },
           paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
         });
@@ -1240,7 +1242,12 @@ export default function MapInterface() {
         ]);
         m.setLayoutProperty('vietnam-admin-label', 'text-allow-overlap', true);
         m.setLayoutProperty('vietnam-admin-label', 'text-ignore-placement', true);
+        m.setLayoutProperty('vietnam-admin-label', 'visibility', showProvinceLabels ? 'visible' : 'none');
         m.setLayerZoomRange('vietnam-admin-label', 3.5, 13);
+      }
+
+      if (m.getLayer('vietnam-islands-label')) {
+        m.setLayoutProperty('vietnam-islands-label', 'visibility', showProvinceLabels ? 'visible' : 'none');
       }
 
       if (!m.getSource(communeSourceId)) {
@@ -1396,7 +1403,7 @@ export default function MapInterface() {
 
     // Always re-apply 3D if active
     updateBuildings3D(m, is3DRef.current);
-  }, [updateBuildings3D, adminUnitColors, adminUnitOpacities, selectedAdminUnits, showAdminBoundaries]);
+  }, [updateBuildings3D, adminUnitColors, adminUnitOpacities, selectedAdminUnits, showAdminBoundaries, showProvinceLabels]);
 
   useEffect(() => {
     setupCustomLayersRef.current = setupCustomLayers;
@@ -1405,7 +1412,7 @@ export default function MapInterface() {
   useEffect(() => {
     if (!map.current) return;
     setupCustomLayers();
-  }, [showAdminBoundaries, is3D, setupCustomLayers, adminUnitColors, adminUnitOpacities, selectedAdminUnits]);
+  }, [showAdminBoundaries, showProvinceLabels, is3D, setupCustomLayers, adminUnitColors, adminUnitOpacities, selectedAdminUnits]);
 
   useEffect(() => {
     if (!map.current) return;
@@ -2547,7 +2554,8 @@ export default function MapInterface() {
             ],
             'text-anchor': 'center',
             'text-justify': 'center',
-            'text-allow-overlap': true
+            'text-allow-overlap': true,
+            'visibility': showProvinceLabels ? 'visible' : 'none'
           },
           paint: {
             'text-color': '#0369a1',
@@ -3082,9 +3090,9 @@ export default function MapInterface() {
                 "w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all relative shrink-0 border",
                 isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700 shadow-sm" : "bg-transparent border-transparent text-text-muted hover:bg-bg-ui"
               )}
-              title="Chế độ Chọn vùng"
+              title="Chọn vùng"
             >
-              <span className={cn("text-[10px] font-bold", isSelectionMode ? "text-yellow-700" : "text-text-muted")}>Pick</span>
+              <span className={cn("text-[10px] font-bold text-center leading-none", isSelectionMode ? "text-yellow-700" : "text-text-muted")}>Chọn<br/>vùng</span>
             </button>
           </div>
         </aside>
@@ -3169,20 +3177,32 @@ export default function MapInterface() {
                   </div>
                 </button>
                 {showAdminBoundaries && (
-                    <button
-                        onClick={() => setIsSelectionMode(!isSelectionMode)}
-                        className={cn(
-                            "w-full mt-1 text-[11px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
-                            isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
-                        )}
-                    >
-                        <span className="flex items-center gap-2">
-                            Chế độ Chọn vùng
-                        </span>
-                        <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center", isSelectionMode ? "bg-yellow-500 border-yellow-500 text-white" : "border-border-main bg-white")}>
-                            {isSelectionMode && <Check size={10} />}
-                        </div>
-                    </button>
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                        <button
+                            onClick={() => setIsSelectionMode(!isSelectionMode)}
+                            className={cn(
+                                "text-[10px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
+                                isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
+                            )}
+                        >
+                            <span>Chọn vùng</span>
+                            <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center shrink-0", isSelectionMode ? "bg-yellow-500 border-yellow-500 text-white" : "border-border-main bg-white")}>
+                                {isSelectionMode && <Check size={10} />}
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setShowProvinceLabels(!showProvinceLabels)}
+                            className={cn(
+                                "text-[10px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
+                                !showProvinceLabels ? "bg-red-50 border-red-200 text-red-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
+                            )}
+                        >
+                            <span>Tắt tên tỉnh</span>
+                            <div className={cn("w-3 h-3 rounded-sm border flex items-center justify-center shrink-0", !showProvinceLabels ? "bg-red-500 border-red-500 text-white" : "border-border-main bg-white")}>
+                                {!showProvinceLabels && <Check size={10} />}
+                            </div>
+                        </button>
+                    </div>
                 )}
               </div>
             </motion.div>
