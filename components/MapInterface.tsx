@@ -1210,7 +1210,7 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-admin-label')) {
         m.addLayer({
           id: 'vietnam-admin-label', type: 'symbol', source: 'vietnam-point-source',
-          minzoom: 3.5, maxzoom: 13,
+          minzoom: 4.5, maxzoom: 13,
           layout: {
             'text-field': ['get', 'ten_tinh'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
@@ -1218,7 +1218,7 @@ export default function MapInterface() {
               'interpolate',
               ['linear'],
               ['zoom'],
-              3.5, 6,
+              4.5, 7,
               6, 10,
               9, 14,
               12, 16
@@ -1235,7 +1235,7 @@ export default function MapInterface() {
           'interpolate',
           ['linear'],
           ['zoom'],
-          3.5, 6,
+          4.5, 7,
           6, 10,
           9, 14,
           12, 16
@@ -1243,7 +1243,7 @@ export default function MapInterface() {
         m.setLayoutProperty('vietnam-admin-label', 'text-allow-overlap', true);
         m.setLayoutProperty('vietnam-admin-label', 'text-ignore-placement', true);
         m.setLayoutProperty('vietnam-admin-label', 'visibility', showProvinceLabels ? 'visible' : 'none');
-        m.setLayerZoomRange('vietnam-admin-label', 3.5, 13);
+        m.setLayerZoomRange('vietnam-admin-label', 4.5, 13);
       }
 
       if (m.getLayer('vietnam-islands-label')) {
@@ -2540,7 +2540,7 @@ export default function MapInterface() {
           id: 'vietnam-islands-label',
           type: 'symbol',
           source: 'vietnam-islands',
-          minzoom: 3.5,
+          minzoom: 4.5,
           layout: {
             'text-field': ['get', 'name'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
@@ -2548,7 +2548,7 @@ export default function MapInterface() {
               'interpolate',
               ['linear'],
               ['zoom'],
-              3.5, 8,
+              4.5, 9,
               6, 11,
               10, 14
             ],
