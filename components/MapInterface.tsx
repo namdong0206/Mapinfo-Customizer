@@ -1209,7 +1209,7 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-admin-label')) {
         m.addLayer({
           id: 'vietnam-admin-label', type: 'symbol', source: 'vietnam-point-source',
-          minzoom: 4.5, maxzoom: 13,
+          minzoom: 3.5, maxzoom: 13,
           layout: {
             'text-field': ['get', 'ten_tinh'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
@@ -1217,7 +1217,7 @@ export default function MapInterface() {
               'interpolate',
               ['linear'],
               ['zoom'],
-              4.5, 7,
+              3.5, 6,
               6, 10,
               9, 14,
               12, 16
@@ -1233,12 +1233,12 @@ export default function MapInterface() {
           'interpolate',
           ['linear'],
           ['zoom'],
-          4.5, 7,
+          3.5, 6,
           6, 10,
           9, 14,
           12, 16
         ]);
-        m.setLayerZoomRange('vietnam-admin-label', 4.5, 13);
+        m.setLayerZoomRange('vietnam-admin-label', 3.5, 13);
       }
 
       if (!m.getSource(communeSourceId)) {
@@ -1344,33 +1344,19 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-commune-label')) {
          m.addLayer({
            id: 'vietnam-commune-label', type: 'symbol', source: communeSourceId,
-           minzoom: 10.5,
+           minzoom: 11,
            layout: {
              'text-field': ['get', 'ten_xa'],
              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-             'text-size': [
-               'interpolate',
-               ['linear'],
-               ['zoom'],
-               10.5, 8,
-               12, 12,
-               15, 14
-             ],
-             'text-anchor': 'center',
-             'text-allow-overlap': false
+             'text-size': 12, 'text-anchor': 'center'
            },
            paint: { 'text-color': '#1e293b', 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
          });
       } else {
-        m.setLayoutProperty('vietnam-commune-label', 'text-size', [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          10.5, 8,
-          12, 12,
-          15, 14
-        ]);
-        m.setLayerZoomRange('vietnam-commune-label', 10.5, 24);
+          try {
+            m.setLayoutProperty('vietnam-commune-label', 'text-size', 12);
+            m.setLayerZoomRange('vietnam-commune-label', 11, 24);
+          } catch (e) {}
       }
 
       // Hide core map labels
