@@ -1223,8 +1223,8 @@ export default function MapInterface() {
               12, 16
             ],
             'text-anchor': 'center',
-            'text-allow-overlap': false,
-            'text-ignore-placement': false
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
           },
           paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
         });
@@ -1238,6 +1238,8 @@ export default function MapInterface() {
           9, 14,
           12, 16
         ]);
+        m.setLayoutProperty('vietnam-admin-label', 'text-allow-overlap', true);
+        m.setLayoutProperty('vietnam-admin-label', 'text-ignore-placement', true);
         m.setLayerZoomRange('vietnam-admin-label', 3.5, 13);
       }
 
@@ -2545,7 +2547,7 @@ export default function MapInterface() {
             ],
             'text-anchor': 'center',
             'text-justify': 'center',
-            'text-allow-overlap': false
+            'text-allow-overlap': true
           },
           paint: {
             'text-color': '#0369a1',
