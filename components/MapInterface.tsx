@@ -1209,14 +1209,36 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-admin-label')) {
         m.addLayer({
           id: 'vietnam-admin-label', type: 'symbol', source: 'vietnam-point-source',
-          minzoom: 4, maxzoom: 12,
+          minzoom: 4.5, maxzoom: 13,
           layout: {
             'text-field': ['get', 'ten_tinh'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 14, 'text-anchor': 'center'
+            'text-size': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              4.5, 7,
+              6, 10,
+              9, 14,
+              12, 16
+            ],
+            'text-anchor': 'center',
+            'text-allow-overlap': false,
+            'text-ignore-placement': false
           },
           paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
         });
+      } else {
+        m.setLayoutProperty('vietnam-admin-label', 'text-size', [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          4.5, 7,
+          6, 10,
+          9, 14,
+          12, 16
+        ]);
+        m.setLayerZoomRange('vietnam-admin-label', 4.5, 13);
       }
 
       if (!m.getSource(communeSourceId)) {
@@ -1322,14 +1344,33 @@ export default function MapInterface() {
       if (!m.getLayer('vietnam-commune-label')) {
          m.addLayer({
            id: 'vietnam-commune-label', type: 'symbol', source: communeSourceId,
-           minzoom: 11,
+           minzoom: 10.5,
            layout: {
              'text-field': ['get', 'ten_xa'],
              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-             'text-size': 12, 'text-anchor': 'center'
+             'text-size': [
+               'interpolate',
+               ['linear'],
+               ['zoom'],
+               10.5, 8,
+               12, 12,
+               15, 14
+             ],
+             'text-anchor': 'center',
+             'text-allow-overlap': false
            },
            paint: { 'text-color': '#1e293b', 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
          });
+      } else {
+        m.setLayoutProperty('vietnam-commune-label', 'text-size', [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          10.5, 8,
+          12, 12,
+          15, 14
+        ]);
+        m.setLayerZoomRange('vietnam-commune-label', 10.5, 24);
       }
 
       // Hide core map labels
@@ -2504,12 +2545,21 @@ export default function MapInterface() {
           id: 'vietnam-islands-label',
           type: 'symbol',
           source: 'vietnam-islands',
+          minzoom: 3.5,
           layout: {
             'text-field': ['get', 'name'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 13,
+            'text-size': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              3.5, 8,
+              6, 11,
+              10, 14
+            ],
             'text-anchor': 'center',
-            'text-justify': 'center'
+            'text-justify': 'center',
+            'text-allow-overlap': false
           },
           paint: {
             'text-color': '#0369a1',
