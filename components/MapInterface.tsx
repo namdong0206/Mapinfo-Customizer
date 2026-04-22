@@ -1341,7 +1341,7 @@ export default function MapInterface() {
           const size = ann.size || 64;
           return `
             <div class="flex flex-col items-center gap-1 group">
-              <div class="p-1 bg-white rounded-lg shadow-xl border-2 border-white overflow-hidden ring-1 ring-black/10 transition-transform active:scale-95">
+              <div class="p-1 bg-white rounded-lg shadow-xl border-2 border-white overflow-hidden ring-1 ring-black/10 transition-transform active:scale-95" style="pointer-events: auto;">
                 <img src="${ann.imageUrl}" style="width: ${size}px; height: auto; display: block; border-radius: 4px;" referrerPolicy="no-referrer" />
               </div>
               <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
@@ -1356,7 +1356,7 @@ export default function MapInterface() {
             if (ann.icon === '3d-fire-forest') {
               return `
                 <div class="flex flex-col items-center gap-1">
-                  <div class="relative w-14 h-14 flex items-center justify-center group">
+                  <div class="relative w-14 h-14 flex items-center justify-center group" style="pointer-events: auto;">
                     <img src="${iconData?.url}" class="w-full h-full object-contain" />
                     <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@latest/assets/Fire/3D/fire_3d.png" 
                          class="absolute bottom-0 w-8 h-8 object-contain ${animClass}" />
@@ -1368,7 +1368,7 @@ export default function MapInterface() {
 
             return `
               <div class="flex flex-col items-center gap-1">
-                <div class="relative group">
+                <div class="relative group" style="pointer-events: auto;">
                   <div class="absolute inset-0 bg-blue-400/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <img src="${iconData?.url}" class="w-12 h-12 object-contain relative z-10 ${animClass}" style="filter: drop-shadow(0 10px 8px rgba(0,0,0,0.2));" />
                 </div>
@@ -1379,7 +1379,7 @@ export default function MapInterface() {
           const path = ICON_PATHS[ann.icon] || ICON_PATHS['flag'];
           return `
             <div class="flex flex-col items-center gap-1">
-              <div style="background: white; padding: 10px; border-radius: 999px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15); border: 3px solid #3b82f6; display: flex; align-items: center; justify-content: center; transform: scale(1.1);" class="transition-transform active:scale-95">
+              <div style="background: white; padding: 10px; border-radius: 999px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15); border: 3px solid #3b82f6; display: flex; align-items: center; justify-content: center; transform: scale(1.1); pointer-events: auto;" class="transition-transform active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
               </div>
               <span style="${textStyle}">${escapeHtml(ann.text || '')}</span>
@@ -1388,7 +1388,7 @@ export default function MapInterface() {
         } else {
           return `
             <div class="flex flex-col items-center gap-1">
-              <div class="px-3 py-1.5 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transition-all active:scale-95" style="background: ${ann.bgColor || '#3b82f6'}">
+              <div class="px-3 py-1.5 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transition-all active:scale-95" style="background: ${ann.bgColor || '#3b82f6'}; pointer-events: auto;">
                 <span class="text-white text-xs font-bold leading-none">${escapeHtml(ann.text)}</span>
               </div>
             </div>
@@ -1407,6 +1407,7 @@ export default function MapInterface() {
       if (!markerInstances.current[ann.id]) {
         const el = document.createElement('div');
         el.className = 'custom-marker-wrapper cursor-pointer z-[110]';
+        el.style.pointerEvents = 'none'; // Prevent parent from capturing events in transparent areas
         el.innerHTML = getMarkerContent();
         
         // Add click listener to edit annotation
@@ -1457,6 +1458,7 @@ export default function MapInterface() {
         marker.setLngLat(ann.lngLat);
         const el = marker.getElement();
         el.className = 'custom-marker-wrapper cursor-pointer z-[110]';
+        el.style.pointerEvents = 'none'; // Re-apply for safety during updates
         
         // Ensure click listener is up to date with fresh 'ann' reference
         el.onclick = (e) => {
