@@ -911,105 +911,66 @@ export default function MapInterface() {
       const communeFillId = 'vietnam-commune-fill';
       const communeLineId = 'vietnam-commune-line';
 
-      if (handleProvinceClickRef.current) {
-        m.off('click', fillLayerId, handleProvinceClickRef.current);
-      }
-      
-      handleProvinceClickRef.current = (e: any) => {
-        const m = map.current;
-        if (!m) return;
-
-        // Use a small buffer to improve touch interaction reliability
-        const features = m.queryRenderedFeatures(
-          [
-            [e.point.x - 5, e.point.y - 5],
-            [e.point.x + 5, e.point.y + 5]
-          ],
-          { layers: [fillLayerId] }
-        );
-
-        if (features && features.length > 0) {
-          const feat = features[0];
-          // Check for TouchEvent vs MouseEvent safely (some browsers use originalEvent)
-          const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
-          const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
+      // Define the comprehensive click handler for administrative regions
+      const handleAdminClick = (e: any) => {
+          const m = map.current;
+          if (!m) return;
           
-          // On touch devices, shift/ctrl/meta key is not easily available
-          const isMultiSelect = !isTouch && (
-            (originalEvent as MouseEvent).shiftKey || 
-            (originalEvent as MouseEvent).ctrlKey || 
-            (originalEvent as MouseEvent).metaKey
-          );
-
-          setSelectedAdminUnits(prev => {
-            const unit = {
-              id: feat.properties.ten_tinh,
-              name: feat.properties.ten_tinh,
-              level: 'province' as const,
-              properties: feat.properties
-            };
-            
-            if (isMultiSelect) {
-              const exists = prev.find(u => u.id === unit.id && u.level === 'province');
-              if (exists) {
-                return prev.filter(u => u.id !== unit.id || u.level !== 'province');
-              }
-              return [...prev, unit];
-            }
-            return [unit];
-          });
-          setShowDataPanel(true);
-        }
-      };
-      
-      if (handleCommuneClickRef.current) {
-        m.off('click', communeFillId, handleCommuneClickRef.current);
-      }
-
-      handleCommuneClickRef.current = (e: any) => {
-        const m = map.current;
-        if (!m) return;
-
-        // Use a small buffer to improve touch interaction reliability
-        const features = m.queryRenderedFeatures(
-          [
-            [e.point.x - 5, e.point.y - 5],
-            [e.point.x + 5, e.point.y + 5]
-          ],
-          { layers: [communeFillId] }
-        );
-
-        if (features && features.length > 0) {
-          const feat = features[0];
-          const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
-          const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
+          // Query for features at the clicked point, with a small buffer for touch
+          const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+              [e.point.x - 5, e.point.y - 5],
+              [e.point.x + 5, e.point.y + 5]
+          ];
           
-          const isMultiSelect = !isTouch && (
-            (originalEvent as MouseEvent).shiftKey || 
-            (originalEvent as MouseEvent).ctrlKey || 
-            (originalEvent as MouseEvent).metaKey
-          );
+          const features = m.queryRenderedFeatures(bbox, { layers: [fillLayerId, communeFillId] });
+          
+          if (features && features.length > 0) {
+              const feat = features[0];
+              const layerId = feat.layer.id;
+              
+              const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
+              const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
 
-          setSelectedAdminUnits(prev => {
-            const unit = {
-              id: feat.properties.ten_xa,
-              name: feat.properties.ten_xa,
-              level: 'commune' as const,
-              properties: feat.properties
-            };
-            
-            if (isMultiSelect) {
-              const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
-              if (exists) {
-                return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
+              const isMultiSelect = !isTouch && (
+                 (originalEvent as MouseEvent).shiftKey ||
+                 (originalEvent as MouseEvent).ctrlKey ||
+                 (originalEvent as MouseEvent).metaKey
+              );
+
+              if (layerId === fillLayerId) {
+                  // Handle Province Click
+                  setSelectedAdminUnits(prev => {
+                      const unit = { id: feat.properties.ten_tinh, name: feat.properties.ten_tinh, level: 'province' as const, properties: feat.properties };
+                      if (isMultiSelect) {
+                          const exists = prev.find(u => u.id === unit.id && u.level === 'province');
+                          if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'province');
+                          return [...prev, unit];
+                      }
+                      return [unit];
+                  });
+              } else if (layerId === communeFillId) {
+                  // Handle Commune Click
+                  setSelectedAdminUnits(prev => {
+                      const unit = { id: feat.properties.ten_xa, name: feat.properties.ten_xa, level: 'commune' as const, properties: feat.properties };
+                      if (isMultiSelect) {
+                          const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
+                          if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
+                          return [...prev, unit];
+                      }
+                      return [unit];
+                  });
               }
-              return [...prev, unit];
-            }
-            return [unit];
-          });
-          setShowDataPanel(true);
-        }
+              setShowDataPanel(true);
+          } else {
+              // Clicked on empty area - clear selection
+              setSelectedAdminUnits([]);
+              setShowDataPanel(false);
+          }
       };
+
+      handleProvinceClickRef.current = handleAdminClick;
+      // Also pointing handleCommuneClickRef to the same merged handler to simplify
+      handleCommuneClickRef.current = handleAdminClick;
 
       if (!m.getSource(sourceId)) {
         m.addSource(sourceId, {
@@ -1072,71 +1033,7 @@ export default function MapInterface() {
         m.on('mouseenter', communeFillId, () => { m.getCanvas().style.cursor = 'pointer'; });
         m.on('mouseleave', communeFillId, () => { m.getCanvas().style.cursor = ''; });
 
-        // Attached to the map globally instead of a specific layer
-        handleProvinceClickRef.current = (e: any) => {
-            const m = map.current;
-            if (!m) return;
-            
-            console.log("Map Click Received at:", e.point);
-            
-            // Query for features at the clicked point, with a small buffer for touch
-            const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
-                [e.point.x - 5, e.point.y - 5],
-                [e.point.x + 5, e.point.y + 5]
-            ];
-            
-            const features = m.queryRenderedFeatures(bbox, { layers: [fillLayerId, communeFillId] });
-            
-            console.log("Features found in admin layers:", features?.length || 0);
-            if (features && features.length > 0) {
-                console.log("First detected feature:", features[0].properties);
-            } else {
-                const allLayers = m.queryRenderedFeatures(bbox);
-                console.log("All features at click location:", allLayers.length);
-            }
-            
-            if (features && features.length > 0) {
-                const feat = features[0];
-                const layerId = feat.layer.id;
-                
-                const isTouch = e.originalEvent && (e.originalEvent.type === 'touchstart' || e.originalEvent.type === 'touchend');
-                const originalEvent = e.originalEvent as MouseEvent | TouchEvent;
-
-                const isMultiSelect = !isTouch && (
-                   (originalEvent as MouseEvent).shiftKey ||
-                   (originalEvent as MouseEvent).ctrlKey ||
-                   (originalEvent as MouseEvent).metaKey
-                );
-
-                if (layerId === fillLayerId) {
-                    // Handle Province Click
-                    setSelectedAdminUnits(prev => {
-                        const unit = { id: feat.properties.ten_tinh, name: feat.properties.ten_tinh, level: 'province' as const, properties: feat.properties };
-                        if (isMultiSelect) {
-                            const exists = prev.find(u => u.id === unit.id && u.level === 'province');
-                            if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'province');
-                            return [...prev, unit];
-                        }
-                        return [unit];
-                    });
-                } else if (layerId === communeFillId) {
-                    // Handle Commune Click
-                    setSelectedAdminUnits(prev => {
-                        const unit = { id: feat.properties.ten_xa, name: feat.properties.ten_xa, level: 'commune' as const, properties: feat.properties };
-                        if (isMultiSelect) {
-                            const exists = prev.find(u => u.id === unit.id && u.level === 'commune');
-                            if (exists) return prev.filter(u => u.id !== unit.id || u.level !== 'commune');
-                            return [...prev, unit];
-                        }
-                        return [unit];
-                    });
-                }
-                setShowDataPanel(true);
-            }
-        };
-
-        // NOT attaching to the map's click event here because it's managed externally
-        // We will call it manually in the click handler if admin boundaries are visible
+        // Handler assignment has been unified at the top of this block
       } else {
         // Update existing layer paint property
         m.setPaintProperty(fillLayerId, 'fill-color', [
@@ -2464,8 +2361,8 @@ export default function MapInterface() {
     const handleMapInteraction = (e: any) => {
       // Only trigger if in Selection Mode
       if (isSelectionModeRef.current && adminBoundaryRef.current) {
+          // Both Refs now point to the same unified handler, so calling one is sufficient
           if (handleProvinceClickRef.current) handleProvinceClickRef.current(e);
-          if (handleCommuneClickRef.current) handleCommuneClickRef.current(e);
       }
       handleMapClickRef.current(e);
     };
@@ -2754,6 +2651,30 @@ export default function MapInterface() {
     setRouteType(routeType);
     setActiveMode('routing');
     setRoutingFocus('start');
+  };
+
+  const toggleSelectionMode = () => {
+    const nextMode = !isSelectionMode;
+    setIsSelectionMode(nextMode);
+    
+    // Clear uncolored selections when turning off selection mode
+    if (!nextMode) {
+      setSelectedAdminUnits(prev => {
+        const filtered = prev.filter(unit => {
+          if (unit.level === 'province') {
+            return !!adminUnitColors.provinces[unit.id];
+          } else {
+            return !!adminUnitColors.communes[unit.id];
+          }
+        });
+        
+        if (filtered.length === 0 && prev.length > 0) {
+          setShowDataPanel(false);
+        }
+        
+        return filtered;
+      });
+    }
   };
 
   const toggle3D = () => {
@@ -3085,7 +3006,7 @@ export default function MapInterface() {
               <Layers size={18} className="md:w-5 md:h-5" />
             </button>
             <button 
-              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              onClick={toggleSelectionMode}
               className={cn(
                 "w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all relative shrink-0 border",
                 isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700 shadow-sm" : "bg-transparent border-transparent text-text-muted hover:bg-bg-ui"
@@ -3179,7 +3100,7 @@ export default function MapInterface() {
                 {showAdminBoundaries && (
                     <div className="grid grid-cols-2 gap-1 mt-1">
                         <button
-                            onClick={() => setIsSelectionMode(!isSelectionMode)}
+                            onClick={toggleSelectionMode}
                             className={cn(
                                 "text-[10px] px-2 py-2 rounded-lg text-left transition-colors font-medium border leading-tight flex items-center justify-between",
                                 isSelectionMode ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-transparent border-transparent text-text-main hover:bg-zinc-50"
