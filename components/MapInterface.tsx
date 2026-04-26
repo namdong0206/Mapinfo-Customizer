@@ -902,7 +902,12 @@ export default function MapInterface() {
     if (!map.current) return;
     const m = map.current;
     
-    if (adminBoundaryRef.current) {
+    const hasAnySelections = selectedAdminUnits.length > 0 || 
+                             Object.keys(adminUnitColors.provinces).length > 0 || 
+                             Object.keys(adminUnitColors.communes).length > 0;
+    const shouldShowCustomLayers = showAdminBoundaries || hasAnySelections;
+    
+    if (shouldShowCustomLayers) {
       const sourceId = 'vietnam-admin-source';
       const fillLayerId = 'vietnam-admin-fill';
       const lineLayerId = 'vietnam-admin-line';
@@ -1021,7 +1026,7 @@ export default function MapInterface() {
                 Object.entries(adminUnitOpacities.provinces).length > 0
                   ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25] as any)
                   : 0.25,
-                0.05
+                showAdminBoundaries ? 0.05 : 0
               ]
             ] as any
           }
@@ -1055,7 +1060,7 @@ export default function MapInterface() {
             Object.entries(adminUnitOpacities.provinces).length > 0
               ? (['match', ['get', 'ten_tinh'], ...Object.entries(adminUnitOpacities.provinces).flat(), 0.25] as any)
               : 0.25,
-            0.05
+            showAdminBoundaries ? 0.05 : 0
           ]
         ] as any);
       }
@@ -1077,7 +1082,7 @@ export default function MapInterface() {
               ['match', ['get', 'ten_tinh'], 
                 Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
                 1.5,
-                1.0
+                showAdminBoundaries ? 1.0 : 0
               ] as any
             ] as any
           }
@@ -1096,7 +1101,7 @@ export default function MapInterface() {
             ['match', ['get', 'ten_tinh'], 
               Object.keys(adminUnitColors.provinces).length > 0 ? Object.keys(adminUnitColors.provinces) : ['__placeholder__'],
               1.5,
-              1.0
+              showAdminBoundaries ? 1.0 : 0
             ] as any
           ] as any);
       }
@@ -1123,9 +1128,21 @@ export default function MapInterface() {
             'text-anchor': 'center',
             'text-allow-overlap': true,
             'text-ignore-placement': true,
-            'visibility': showProvinceLabels ? 'visible' : 'none'
+            'visibility': (showAdminBoundaries || hasAnySelections) && showProvinceLabels ? 'visible' : 'none'
           },
-          paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
+          paint: { 
+            'text-color': '#0f172a', 
+            'text-halo-color': '#ffffff', 
+            'text-halo-width': 2,
+            'text-opacity': [
+               'case',
+               ['in', ['get', 'ten_tinh'], ['literal', Object.keys(adminUnitColors.provinces)]],
+               1,
+               ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+               1,
+               showAdminBoundaries ? 1 : 0
+            ] as any
+          }
         });
       } else {
         m.setLayoutProperty('vietnam-admin-label', 'text-size', [
@@ -1139,7 +1156,15 @@ export default function MapInterface() {
         ]);
         m.setLayoutProperty('vietnam-admin-label', 'text-allow-overlap', true);
         m.setLayoutProperty('vietnam-admin-label', 'text-ignore-placement', true);
-        m.setLayoutProperty('vietnam-admin-label', 'visibility', showProvinceLabels ? 'visible' : 'none');
+        m.setLayoutProperty('vietnam-admin-label', 'visibility', (showAdminBoundaries || hasAnySelections) && showProvinceLabels ? 'visible' : 'none');
+        m.setPaintProperty('vietnam-admin-label', 'text-opacity', [
+           'case',
+           ['in', ['get', 'ten_tinh'], ['literal', Object.keys(adminUnitColors.provinces)]],
+           1,
+           ['in', ['get', 'ten_tinh'], ['literal', selectedAdminUnits.filter(u => u.level === 'province').map(u => u.id)]],
+           1,
+           showAdminBoundaries ? 1 : 0
+        ] as any);
         m.setLayerZoomRange('vietnam-admin-label', 4.5, 13);
       }
 
@@ -1174,7 +1199,7 @@ export default function MapInterface() {
                  Object.entries(adminUnitOpacities.communes).length > 0
                    ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25] as any)
                    : 0.25,
-                 0.05
+                 showAdminBoundaries ? 0.05 : 0
                ]
              ] as any
            }
@@ -1202,7 +1227,7 @@ export default function MapInterface() {
              Object.entries(adminUnitOpacities.communes).length > 0
                ? (['match', ['get', 'ten_xa'], ...Object.entries(adminUnitOpacities.communes).flat(), 0.25] as any)
                : 0.25,
-             0.05
+             showAdminBoundaries ? 0.05 : 0
            ]
          ] as any);
       }
@@ -1224,7 +1249,7 @@ export default function MapInterface() {
                ['match', ['get', 'ten_xa'], 
                  Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
                  1.2,
-                 0.5
+                 showAdminBoundaries ? 0.5 : 0
                ]
              ]
            }
@@ -1243,7 +1268,7 @@ export default function MapInterface() {
            ['match', ['get', 'ten_xa'], 
              Object.keys(adminUnitColors.communes).length > 0 ? Object.keys(adminUnitColors.communes) : ['__placeholder__'],
              1.2,
-             0.5
+             showAdminBoundaries ? 0.5 : 0
            ] as any
          ] as any);
       }
@@ -1265,34 +1290,44 @@ export default function MapInterface() {
           } catch (e) {}
       }
 
-      // Hide core map labels
+      // Handle core map labels visibility based on showAdminBoundaries
       const style = m.getStyle();
       if (style && style.layers) {
         style.layers.forEach(layer => {
-          // Disable all symbol layers except for our custom vietnam labels and draw layers
           if (layer.type === 'symbol') {
-              if (!layer.id.startsWith('vietnam-') && !layer.id.startsWith('vehicle-') && 
-                  !layer.id.startsWith('gl-draw-') && layer.id !== 'search-marker-layer') {
-                try { m.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) {}
-              }
+            const isVietnamCustomLabel = layer.id.includes('vietnam-');
+            const isSpecialLayer = layer.id.startsWith('vehicle-') || 
+                                  layer.id.startsWith('gl-draw-') || 
+                                  layer.id === 'search-marker-layer';
+            
+            if (!isVietnamCustomLabel && !isSpecialLayer) {
+              try { 
+                 // Show core labels if showAdminBoundaries is off
+                 m.setLayoutProperty(layer.id, 'visibility', showAdminBoundaries ? 'none' : 'visible'); 
+              } catch (e) {}
+            }
           }
         });
       }
     } else {
-      // Remove custom layers if showAdminBoundaries is off
+      // Remove custom layers only if they are not needed at all
       ['vietnam-admin-fill', 'vietnam-admin-line', 'vietnam-admin-label', 'vietnam-commune-fill', 'vietnam-commune-line', 'vietnam-commune-label'].forEach(id => {
         if (m.getLayer(id)) m.removeLayer(id);
       });
-      ['vietnam-admin-source', 'vietnam-point-source', 'vietnam-commune-source'].forEach(id => {
-        if (m.getSource(id)) m.removeSource(id);
-      });
-
-      // Restore core map labels
-      const style = m.getStyle();
-      if (style && style.layers) {
-        style.layers.forEach(layer => {
-          if (layer.type === 'symbol' && !layer.id.includes('vietnam-') && !layer.id.startsWith('vehicle-') && layer.id !== 'search-marker-layer') {
-             try { m.setLayoutProperty(layer.id, 'visibility', 'visible'); } catch (e) {}
+      
+      // If nothing is shown, ensure core labels are restored
+      const styleOuter = m.getStyle();
+      if (styleOuter && styleOuter.layers) {
+        styleOuter.layers.forEach(layer => {
+          if (layer.type === 'symbol') {
+            const isVietnamCustomLabel = layer.id.includes('vietnam-');
+            const isSpecialLayer = layer.id.startsWith('vehicle-') || 
+                                  layer.id.startsWith('gl-draw-') || 
+                                  layer.id === 'search-marker-layer';
+                                  
+            if (!isVietnamCustomLabel && !isSpecialLayer) {
+              try { m.setLayoutProperty(layer.id, 'visibility', 'visible'); } catch (e) {}
+            }
           }
         });
       }
